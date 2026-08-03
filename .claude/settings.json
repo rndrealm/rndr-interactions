@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p src && git mv app src/app && git status --short && echo \"=== tree\" && find src -type f | sort)",
+      "Bash(git checkout *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/motion/package.json'\\).version\\)\")"
+    ],
+    "additionalDirectories": [
+      "/Users/stephen/Desktop/programming/rndr/rndr-interactions"
+    ]
+  }
+}
