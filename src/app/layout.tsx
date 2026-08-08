@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { Geist_Mono } from "next/font/google";
+import { SquircleNoScript } from "@squircle-js/react";
+import { Agentation } from "agentation";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Inter Display is the opsz 32 end of Inter's optical-size axis, pinned in
+// globals.css. Self-hosted rather than via next/font/google: that path emits a
+// wght-only file, so the `opsz` setting silently does nothing.
+const interDisplay = localFont({
+  src: "./fonts/InterVariable.woff2",
+  variable: "--font-inter-display",
+  weight: "100 900",
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -25,9 +33,21 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${interDisplay.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        {/* Squircle clip-paths are computed client-side; without this the SSR'd
+            `clip-path: path('')` hides squircled elements until hydration. */}
+        <SquircleNoScript />
+      </head>
+      <body className="min-h-full flex flex-col">
+        {children}
+        {/* devDependency — the NODE_ENV gate keeps it out of production bundles,
+            where it wouldn't be installed. */}
+        {process.env.NODE_ENV === "development" && (
+          <Agentation endpoint="http://localhost:4747" />
+        )}
+      </body>
     </html>
   );
 }
