@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
+import { SquircleNoScript } from "@squircle-js/react";
+import { Agentation } from "agentation";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Inter Display is the opsz 32 end of Inter's optical-size axis, so we pull the
+// variable font with `opsz` exposed and pin it in globals.css.
+const interDisplay = Inter({
+  variable: "--font-inter-display",
   subsets: ["latin"],
+  axes: ["opsz"],
 });
 
 const geistMono = Geist_Mono({
@@ -25,9 +30,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${interDisplay.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <SquircleNoScript />
+      </head>
+      <body className="min-h-full flex flex-col">
+        {children}
+        {/* devDependency — the NODE_ENV gate keeps it out of production bundles,
+            where it wouldn't be installed. */}
+        {process.env.NODE_ENV === "development" && (
+          <Agentation endpoint="http://localhost:4747" />
+        )}
+      </body>
     </html>
   );
 }

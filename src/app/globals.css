@@ -1,26 +1,87 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.205 0 0);
+}
+
+/* 12-step neutral ramp — https://oklch.fyi/color-palettes/gray
+   Pure neutrals (C = 0). Steps 1-8 are surfaces/borders, 9-12 are text-capable. */
+@theme {
+  --color-gray-*: initial;
+  --color-gray-1: oklch(0.993 0 0);
+  --color-gray-2: oklch(0.982 0 0);
+  --color-gray-3: oklch(0.961 0 0);
+  --color-gray-4: oklch(0.94 0 0);
+  --color-gray-5: oklch(0.918 0 0);
+  --color-gray-6: oklch(0.894 0 0);
+  --color-gray-7: oklch(0.865 0 0);
+  --color-gray-8: oklch(0.818 0 0);
+  --color-gray-9: oklch(0.649 0 0);
+  --color-gray-10: oklch(0.606 0 0);
+  --color-gray-11: oklch(0.503 0 0);
+  --color-gray-12: oklch(0.375 0 0);
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+/* Motion scale-corrects border-radius through a layout animation but has no
+   way to correct a clip-path, so anything that resizes mid-transition takes its
+   squircle from CSS instead of from the Squircle component. */
+@utility corner-squircle {
+  corner-shape: squircle;
+}
+
+/* Loading placeholder: a sweep travelling across the skeleton fill. */
+@utility skeleton-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-gray-2) 0%,
+    var(--color-gray-2) 35%,
+    var(--color-gray-4) 50%,
+    var(--color-gray-2) 65%,
+    var(--color-gray-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    animation: none;
+    background-image: none;
+    background-color: var(--color-gray-2);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter-display);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.946 0 0);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter-display), ui-sans-serif, system-ui, sans-serif;
+  /* opsz 32 = Inter Display; 500 = medium */
+  font-variation-settings: "opsz" 32;
+  font-weight: 500;
 }
