@@ -3,7 +3,15 @@
     "allow": [
       "Bash(mkdir -p src && git mv app src/app && git status --short && echo \"=== tree\" && find src -type f | sort)",
       "Bash(git checkout *)",
-      "Bash(node -e \"console.log\\(require\\('./node_modules/motion/package.json'\\).version\\)\")"
+      "Bash(node -e \"console.log\\(require\\('./node_modules/motion/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/leva/package.json'\\).version\\)\")",
+      "Bash(curl -s -o /dev/null -w \"status=%{http_code} type=%{content_type} size=%{size_download}\\\\n\" \"https://cdn.cosmos.so/0b645789-a162-4764-932e-cd2d069eb993?format=webp&w=2048\")",
+      "Bash(curl -s -o /dev/null -w \"status=%{http_code} type=%{content_type} size=%{size_download}\\\\n\" \"https://cubuvl-depthpro-transformers-grayscale.hf.space/file=/tmp/gradio/5b65d7afd360b55b26a56bb612a6e0ce1b4272c203365d50ac8286b35d8e032b/image.webp\")",
+      "Bash(curl -s -m 15 -o /dev/null -w \"status=%{http_code} type=%{content_type} size=%{size_download} time=%{time_total}\\\\n\" \"https://cdn.cosmos.so/0b645789-a162-4764-932e-cd2d069eb993?format=webp&w=2048\")",
+      "Bash(echo \"FAILED/TIMEOUT \\(exit $?\\)\")",
+      "Bash(curl -s -m 15 -o /dev/null -w \"status=%{http_code} type=%{content_type} size=%{size_download} time=%{time_total}\\\\n\" \"https://cubuvl-depthpro-transformers-grayscale.hf.space/file=/tmp/gradio/5b65d7afd360b55b26a56bb612a6e0ce1b4272c203365d50ac8286b35d8e032b/image.webp\")",
+      "Bash(npx eslint *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/three/package.json'\\).version, require\\('./node_modules/three/package.json'\\).types||''\\)\")"
     ],
     "additionalDirectories": [
       "/Users/stephen/Desktop/programming/rndr/rndr-interactions"
