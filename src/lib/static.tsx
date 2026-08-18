@@ -1,4 +1,4 @@
-import { Bell, Gallery, Home, Stats, Vr } from "@/components/icons/sidebar";
+import { Bell, Payments, Home, Stats, History } from "@/components/icons/sidebar";
 
 export const SidebarLinks = [
   {
@@ -6,12 +6,12 @@ export const SidebarLinks = [
     route: "/sidebar-morph/home",
   },
   {
-    icon: (color: string) => <Gallery color={color} />,
-    route: "/sidebar-morph/gallery",
+    icon: (color: string) => <Payments color={color} />,
+    route: "/sidebar-morph/payments",
   },
   {
-    icon: (color: string) => <Vr color={color} />,
-    route: "/sidebar-morph/vr",
+    icon: (color: string) => <History color={color} />,
+    route: "/sidebar-morph/history",
   },
   {
     icon: (color: string) => <Stats color={color} />,
