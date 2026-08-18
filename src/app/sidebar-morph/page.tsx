@@ -7,10 +7,15 @@ import {
   BellActive,
   PaymentsActive,
   Help,
+  HelpActive,
   HomeActive,
+  Layers,
+  Moon,
   Search,
   Settings,
   SettingsActive,
+  Stack,
+  Sun,
   Out,
 } from "@/components/icons/sidebar";
 
@@ -75,6 +80,22 @@ const poses = (horizontal: boolean) => ({
 const LINK_SIZE = 40;
 const SLOT_PITCH = 48;
 const TOOLTIP_GAP = 12;
+
+// A flip runs in two beats around the pivot: everything collapses onto it on the old
+// axis, blurring out as it goes, then fans back out on the new axis, blurring in. The
+// pivot itself never moves or blurs — it is the hinge the rest folds through.
+const FLIP_BLUR = 5;
+const COLLAPSE_MS = 0.3;
+const EXPAND_MS = 0.45;
+// Fraction of each beat that the blur leads the movement by, so an icon has already
+// softened before it starts travelling rather than smearing as it goes.
+const BLUR_LEAD = 0.45;
+// Furthest icons leave first and arrive last, which reads as folding and unfolding.
+const FLIP_STAGGER = 0.18;
+
+const easeInQuad = (t: number) => t * t;
+const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 // Nine 40px slots, two 40px group gaps and 16px padding come to 520px; below this a
 // row cannot fit, so the rail falls back to a stack.
 const ROW_MIN_WIDTH = 560;
@@ -91,11 +112,14 @@ const TRAIL_RATIO = 0.35;
 const WIDTH_RATIO = 0.3;
 const MIN_WIDTH = 8;
 const REBOUND = 7;
+// Only a genuine drop gets a sound; short hops would turn the rail into a xylophone.
+const IMPACT_VOLUME = 0.28;
+const IMPACT_SOUND = "/sounds/water-drop.wav";
 
 // Liquid-glass settle on the icon the blob lands under. Feeding the same noise channel
 // into both axes of the displacement map forces every offset to be an equal (dx, dy) —
 // so the refraction runs on the diagonal instead of scattering.
-const GLASS_DISPLACE = 20;
+const GLASS_DISPLACE = 10;
 // Matches MAX_BLUR so the hand-off from travel blur to glass settle is continuous
 // rather than a visible step down.
 const GLASS_BLUR = 3.5;
@@ -110,10 +134,72 @@ const GLASS_BLUR = 3.5;
 // the two discs simply overlap for most of a hop and there is no gap left to bridge.
 // Any larger and the resting blobs also start fusing with each other at rest.
 const IDLE_RADIUS = 14;
-// Matches the rail exactly, so a resting blob is invisible until the active one merges
-// into it. Keep this in step with the rail's background in the markup below.
-const IDLE_FILL = "oklch(0.15 0 0)";
-const ACTIVE_FILL = "oklch(0.35 0 0)";
+
+type Theme = {
+  page: string;
+  rail: string;
+  // Must equal `rail`: a resting blob is meant to be invisible until the active one
+  // merges into it. Any drift and nine faint discs reappear.
+  idle: string;
+  active: string;
+  icon: string;
+  iconActive: string;
+  // The bevel is animated during a flip, so it is kept as channels plus an alpha
+  // rather than a hex literal — interpolating a packed string is not possible.
+  bevelRGB: string;
+  bevelAlpha: number;
+  // How much of the rail shows through the active blob. The blob is glass, so it tints
+  // what is behind it rather than covering it.
+  blobOpacity: number;
+  // Strength of the active blob's inner rim light, fed to the rim filter's flood.
+  rimAlpha: number;
+  tooltip: string;
+  tooltipText: string;
+};
+
+// Light inverts the relationships rather than the numbers: in dark the rail is lighter
+// than the page and the active blob lighter still, so in light each step goes darker,
+// and the bevel highlight becomes a shadow.
+const THEMES: Record<"dark" | "light", Theme> = {
+  dark: {
+    page: "oklch(0.1 0 0)",
+    rail: "oklch(0.15 0 0)",
+    idle: "oklch(0.15 0 0)",
+    active: "oklch(0.35 0 0)",
+    icon: "oklch(0.62 0 0)",
+    iconActive: "oklch(0.81 0 0)",
+    bevelRGB: "249, 249, 249",
+    bevelAlpha: 0.075,
+    blobOpacity: 0.25,
+    // 30% softer than light: a white rim reads far harder against a near-black rail.
+    rimAlpha: 0.665,
+    tooltip: "oklch(0.55 0 0)",
+    tooltipText: "#f9f9f9",
+  },
+  // Taken off the reference: a near-white button raised from a light grey surface, with
+  // a pure black glyph. The rail has to be the grey, not the white — a white blob on a
+  // white rail has nothing to stand on.
+  light: {
+    page: "oklch(0.955 0 0)",
+    rail: "oklch(0.925 0 0)",
+    idle: "oklch(0.925 0 0)",
+    active: "oklch(1 0 0)",
+    icon: "oklch(0.45 0 0)",
+    iconActive: "oklch(0 0 0)",
+    // White, like dark's — on the grey rail it reads as a lit top edge rather than a
+    // groove. It needs far more alpha than the dark theme: white on a light surface has
+    // a fraction of the contrast white on a near-black one does.
+    bevelRGB: "255, 255, 255",
+    bevelAlpha: 0.7,
+    blobOpacity: 0.22,
+    rimAlpha: 0.95,
+    tooltip: "oklch(0.55 0 0)",
+    tooltipText: "#f9f9f9",
+  },
+};
+
+const bevel = (theme: Theme, scale = 1) =>
+  `inset 0.5px 0.6px 0.5px rgba(${theme.bevelRGB}, ${theme.bevelAlpha * scale})`;
 
 // Icons smear as the blob sweeps past: blur peaks when the blob is centred on an
 // icon, and fades out over roughly one slot either side.
@@ -137,6 +223,7 @@ const ACTIVE_ICONS: Record<string, (color: string) => React.ReactNode> = {
   Payments: (c) => <PaymentsActive color={c} />,
   Notifications: (c) => <BellActive color={c} />,
   Settings: (c) => <SettingsActive color={c} />,
+  Help: (c) => <HelpActive color={c} />,
 };
 
 const RAIL_SOURCE: RailItem[][] = [
@@ -170,7 +257,9 @@ const PIVOT_INDEX = 4;
 const SidebarMorphPage = () => {
   const [activeIndex, setActiveIndex] = useState(1);
   const [orientation, setOrientation] = useState<Orientation>("stack");
+  const [themeName, setThemeName] = useState<"dark" | "light">("dark");
   const [hovered, setHovered] = useState<number | null>(null);
+  const theme = THEMES[themeName];
   // Slot positions are measured rather than derived: the rail has 40px gaps between
   // groups, so an index × pitch formula would land the blob short of the lower icons.
   const [slotPos, setSlotPos] = useState<number[]>([]);
@@ -207,8 +296,10 @@ const SidebarMorphPage = () => {
 
   const railRef = useRef<HTMLElement>(null);
   const railWrapRef = useRef<HTMLDivElement>(null);
+  const railBgRef = useRef<HTMLDivElement>(null);
   const pendingFlip = useRef(false);
   const indicatorRef = useRef<SVGPathElement>(null);
+  const glassRef = useRef<SVGPathElement>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const iconRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const displaceRef = useRef<SVGFEDisplacementMapElement>(null);
@@ -217,6 +308,58 @@ const SidebarMorphPage = () => {
   const travelId = useRef(0);
   const isNudged = useRef(false);
   const currentPos = useRef(0);
+  const audioRef = useRef<AudioContext | null>(null);
+  const impactBuffer = useRef<AudioBuffer | null>(null);
+
+  // Decoded once up front rather than played through an <audio> element: an element
+  // carries start-up latency and cannot overlap itself, and the hit has to land on the
+  // same frame as the impact squash.
+  useEffect(() => {
+    const Ctx =
+      window.AudioContext ??
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!Ctx) return;
+    // Constructed before any gesture, so it starts suspended — decoding is still
+    // allowed there, only playback is gated, and the first click resumes it.
+    const ctx = (audioRef.current ??= new Ctx());
+    let cancelled = false;
+    fetch(IMPACT_SOUND)
+      .then((r) => r.arrayBuffer())
+      .then((buf) => ctx.decodeAudioData(buf))
+      .then((decoded) => {
+        if (!cancelled) impactBuffer.current = decoded;
+      })
+      .catch(() => {
+        // Silent rail is better than a broken one; nothing else depends on this.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const playImpact = () => {
+    const ctx = audioRef.current;
+    const buffer = impactBuffer.current;
+    if (!ctx || !buffer) return;
+    if (ctx.state === "suspended") void ctx.resume();
+
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    source.buffer = buffer;
+    gain.gain.value = IMPACT_VOLUME;
+    source.connect(gain).connect(ctx.destination);
+    source.start();
+  };
+
+  // The blob is drawn twice: the body inside the goo group so it can merge, and a
+  // glass layer on top of it. Both must always carry the same shape and position, so
+  // every write goes through these rather than touching one element.
+  const blobEls = () =>
+    [indicatorRef.current, glassRef.current].filter(Boolean) as SVGPathElement[];
+  const setBlobTransform = (transform: string) =>
+    blobEls().forEach((el) => (el.style.transform = transform));
+  const setBlobPath = (d: string) => blobEls().forEach((el) => el.setAttribute("d", d));
 
   // Re-measured whenever the rail flips, since every slot moves onto the other axis.
   useLayoutEffect(() => {
@@ -230,59 +373,125 @@ const SidebarMorphPage = () => {
 
     const base = `translate${horizontal ? "X" : "Y"}(${currentPos.current}px)`;
     const path = indicatorRef.current;
-    if (path) path.style.transform = base;
+    if (path) setBlobTransform(base);
 
     const wrap = railWrapRef.current;
+    const bg = railBgRef.current;
     if (!pendingFlip.current || !path || !wrap) return;
     pendingFlip.current = false;
     // The layout above is already the finished state; reduced motion simply keeps it.
     if (reducedMotion.current) return;
 
-    // Animating between the two layouts would sling the icons diagonally across dead
-    // space outside the container. Instead they unfold from the pivot along the new
-    // axis: everything starts collapsed onto the pivot and slides out to its slot, so
-    // the motion stays inside the container the whole way.
+    // Beat two: the icons are already collapsed on the pivot and blurred out from the
+    // first beat, so fan them back out along the new axis and bring them back into
+    // focus. Movement lags the blur again, and the furthest arrive last.
+    const axisNow = horizontal ? "X" : "Y";
     const pivotAt = positions[PIVOT_INDEX] ?? 0;
     const offsets = positions.map((pos) => pivotAt - pos);
     const reach = Math.max(...offsets.map(Math.abs), 1);
 
     isAnimating.current = true;
     animate(0, 1, {
-      duration: 0.55,
-      ease: [0.32, 0.72, 0, 1],
+      duration: EXPAND_MS,
+      ease: "linear",
       onUpdate: (p) => {
-        const back = 1 - p;
         offsets.forEach((offset, i) => {
           const btn = buttonRefs.current[i];
           if (!btn) return;
-          btn.style.transform = `translate${horizontal ? "X" : "Y"}(${offset * back}px)`;
-          // Furthest icons arrive last, so the rail reads as unfurling.
-          btn.style.opacity = `${Math.min(1, p * (1 + Math.abs(offset) / reach))}`;
+          const distance = Math.abs(offset) / reach;
+          const local = clamp01((p - distance * FLIP_STAGGER) / (1 - distance * FLIP_STAGGER));
+          const settled = easeOutCubic(local);
+          btn.style.transform = `translate${axisNow}(${offset * (1 - settled)}px)`;
+          const sharpness = clamp01(local / BLUR_LEAD);
+          btn.style.filter = i === PIVOT_INDEX ? "" : `blur(${FLIP_BLUR * (1 - sharpness)}px)`;
+          btn.style.opacity = i === PIVOT_INDEX ? "1" : `${sharpness}`;
         });
         // Composed, not replaced — the blob still owes its slot offset underneath.
-        path.style.transform = `translate${horizontal ? "X" : "Y"}(${(offsets[activeIndex] ?? 0) * back}px) ${base}`;
-        // The inner shadow resolves with the rest of it rather than being there first.
-        wrap.style.boxShadow = `inset ${0.5 * p}px ${0.6 * p}px 0.5px rgba(249, 249, 249, ${0.15 * p})`;
+        const blobSettled = easeOutCubic(p);
+        setBlobTransform(`translate${axisNow}(${(offsets[activeIndex] ?? 0) * (1 - blobSettled)}px) ${base}`);
+        // The surface sharpens across the whole beat, not on the icons' BLUR_LEAD ramp.
+        // On that ramp it resolved in the first 45% and was already sharp while the
+        // icons were still arriving, so the blur-in never read as one.
+        if (bg) {
+          bg.style.filter = `blur(${FLIP_BLUR * (1 - p)}px)`;
+          // The inner shadow resolves with the rest of it rather than being there first.
+          bg.style.boxShadow = `inset ${0.5 * p}px ${0.6 * p}px 0.5px rgba(${theme.bevelRGB}, ${theme.bevelAlpha * p})`;
+        }
       },
     }).finished.then(() => {
       buttonRefs.current.forEach((btn) => {
         if (btn) {
           btn.style.transform = "";
           btn.style.opacity = "";
+          btn.style.filter = "";
         }
       });
-      path.style.transform = base;
-      wrap.style.boxShadow = "";
+      setBlobTransform(base);
+      if (bg) {
+        bg.style.filter = "";
+        // Restored, not cleared: the bevel is an inline style now, so blanking it would
+        // drop the shadow until some unrelated render happened to rewrite it.
+        bg.style.boxShadow = bevel(theme);
+      }
       isAnimating.current = false;
     });
     // activeIndex is deliberately not a dependency — this only re-runs on a flip.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [horizontal]);
 
-  const flipTo = (mode: Orientation) => {
-    if (isAnimating.current || mode === orientation) return;
+  const flipTo = async (option: Orientation) => {
+    if (isAnimating.current || option === orientation) return;
+    // A row below ROW_MIN_WIDTH resolves back to a stack, so the layout would not change
+    // and the second beat would never fire — leaving the lock held forever.
+    if ((option === "row" && !narrow) === horizontal) {
+      setOrientation(option);
+      return;
+    }
+    if (reducedMotion.current) {
+      pendingFlip.current = true;
+      setOrientation(option);
+      return;
+    }
+
+    const path = indicatorRef.current;
+    if (!path) return;
+    const surfaceEl = railBgRef.current;
+
+    // Beat one: fold onto the pivot on the axis the rail still has. This has to finish
+    // before the layout changes, so it runs here rather than in the effect.
+    isAnimating.current = true;
+    const axisWas = horizontal ? "X" : "Y";
+    const pivotAt = slotPos[PIVOT_INDEX] ?? 0;
+    const offsets = slotPos.map((pos) => pivotAt - pos);
+    const reach = Math.max(...offsets.map(Math.abs), 1);
+    const base = `translate${axisWas}(${currentPos.current}px)`;
+
+    await animate(0, 1, {
+      duration: COLLAPSE_MS,
+      ease: "linear",
+      onUpdate: (p) => {
+        offsets.forEach((offset, i) => {
+          const btn = buttonRefs.current[i];
+          if (!btn || i === PIVOT_INDEX) return;
+          // Furthest leave first: their stagger is subtracted from the far end.
+          const distance = Math.abs(offset) / reach;
+          const local = clamp01((p - (1 - distance) * FLIP_STAGGER) / (1 - (1 - distance) * FLIP_STAGGER));
+          const softness = clamp01(local / BLUR_LEAD);
+          btn.style.filter = `blur(${FLIP_BLUR * softness}px)`;
+          btn.style.opacity = `${1 - softness}`;
+          // Movement trails the blur, so it softens in place before folding in.
+          btn.style.transform = `translate${axisWas}(${offset * easeInQuad(local)}px)`;
+        });
+        setBlobTransform(`translate${axisWas}(${(offsets[activeIndex] ?? 0) * easeInQuad(p)}px) ${base}`);
+        // The surface softens on the same ramp the icons do.
+        const surface = clamp01(p / BLUR_LEAD);
+        if (surfaceEl) surfaceEl.style.filter = `blur(${FLIP_BLUR * surface}px)`;
+      },
+    }).finished;
+
     pendingFlip.current = true;
-    setOrientation(mode);
+    isAnimating.current = false;
+    setOrientation(option);
   };
 
   // `intensity` gates the effect on travel — it is 0 at rest, so the icon the blob
@@ -338,7 +547,7 @@ const SidebarMorphPage = () => {
     if (!isNudged.current) {
       isNudged.current = true;
       const nudgeShape = index > activeIndex ? shapes.nudgeForward : shapes.nudgeBack;
-      animate(indicatorRef.current, { d: nudgeShape }, { duration: 0.15 });
+      animate(blobEls(), { d: nudgeShape }, { duration: 0.15 });
     }
   };
 
@@ -346,7 +555,7 @@ const SidebarMorphPage = () => {
     setHovered(null);
     if (isAnimating.current || !indicatorRef.current || !isNudged.current) return;
     isNudged.current = false;
-    animate(indicatorRef.current, { d: shapes.circle }, { duration: 0.15 });
+    animate(blobEls(), { d: shapes.circle }, { duration: 0.15 });
   };
 
   const handleClick = async (index: number) => {
@@ -357,7 +566,7 @@ const SidebarMorphPage = () => {
     // Reduced motion: take the new state directly. No fall, no smear, no refraction —
     // the colour and glyph change still carry the selection.
     if (reducedMotion.current) {
-      indicatorRef.current.style.transform = `translate${axis}(${to}px)`;
+      setBlobTransform(`translate${axis}(${to}px)`);
       currentPos.current = to;
       setActiveIndex(index);
       return;
@@ -369,7 +578,6 @@ const SidebarMorphPage = () => {
 
     const forward = index > activeIndex;
     const from = currentPos.current;
-    const path = indicatorRef.current;
     const distance = Math.abs(to - from);
     const isFall = distance >= FALL_SLOTS * SLOT_PITCH;
     let glass: Promise<void> | undefined;
@@ -381,19 +589,19 @@ const SidebarMorphPage = () => {
     if (!isFall) {
       // Neighbouring hop: slide, hold the circle, no deformation. The hover nudge has
       // to be unwound first or the blob travels still wearing it.
-      animate(path, { d: shapes.circle }, { duration: 0.12, ease: "easeOut" });
+      animate(blobEls(), { d: shapes.circle }, { duration: 0.12, ease: "easeOut" });
       await animate(from, to, {
         duration: 0.26,
         ease: [0.42, 0, 0.58, 1],
         onUpdate: (p) => {
-          path.style.transform = `translate${axis}(${p}px)`;
+          setBlobTransform(`translate${axis}(${p}px)`);
           const progress = (p - from) / (to - from);
           applyBlur(p, Math.sin(Math.PI * progress));
         },
       }).finished;
     } else {
       // Gather before the drop.
-      await animate(path, { d: shapes.crouch }, { duration: 0.09, ease: "easeOut" }).finished;
+      await animate(blobEls(), { d: shapes.crouch }, { duration: 0.09, ease: "easeOut" }).finished;
 
       let prevPos = from;
       let prevT = performance.now();
@@ -422,13 +630,12 @@ const SidebarMorphPage = () => {
           // Volume is roughly conserved: the faster it goes, the thinner it gets.
           const cross = Math.max(RADIUS - stretch * WIDTH_RATIO, MIN_WIDTH);
           // The blob elongates along its direction of travel and narrows behind it.
-          path.setAttribute(
-            "d",
+          setBlobPath(
             velocity >= 0
               ? blob(trail, lead, cross, horizontal)
               : blob(lead, trail, cross, horizontal)
           );
-          path.style.transform = `translate${axis}(${p}px)`;
+          setBlobTransform(`translate${axis}(${p}px)`);
 
           applyBlur(p, Math.min(stretch / MAX_STRETCH, 1));
         },
@@ -439,11 +646,13 @@ const SidebarMorphPage = () => {
       clearBlur();
       glass = settleGlass(index, travel);
 
+      // Sounded on the frame it lands, not when the travel is queued, so the hit and
+      // the noise coincide. Downward stack travel only — a row has no floor to hit.
+      if (forward && !horizontal && !reducedMotion.current) playImpact();
+
       // Land: flatten on impact, bounce back off it, then drop in and settle. A shape
       // spring alone reads as a wobble; the blob has to actually leave the surface.
-      await animate(
-        path,
-        { d: forward ? shapes.impactForward : shapes.impactBack },
+      await animate(blobEls(), { d: forward ? shapes.impactForward : shapes.impactBack },
         { duration: 0.07, ease: "easeOut" }
       ).finished;
 
@@ -455,20 +664,20 @@ const SidebarMorphPage = () => {
           duration: 0.1,
           ease: "easeOut",
           onUpdate: (p) => {
-            path.style.transform = `translate${axis}(${p}px)`;
+            setBlobTransform(`translate${axis}(${p}px)`);
           },
         }).finished;
-        animate(path, { d: shapes.circle }, { duration: 0.16, ease: "easeOut" });
+        animate(blobEls(), { d: shapes.circle }, { duration: 0.16, ease: "easeOut" });
         await animate(bounceTo, to, {
           duration: 0.13,
           ease: "easeIn",
           onUpdate: (p) => {
-            path.style.transform = `translate${axis}(${p}px)`;
+            setBlobTransform(`translate${axis}(${p}px)`);
           },
         }).finished;
       }
 
-      await animate(path, { d: shapes.settle }, { duration: 0.06, ease: "easeOut" }).finished;
+      await animate(blobEls(), { d: shapes.settle }, { duration: 0.06, ease: "easeOut" }).finished;
     }
 
     currentPos.current = to;
@@ -479,7 +688,7 @@ const SidebarMorphPage = () => {
       clearBlur();
       glass = settleGlass(index, travel);
     }
-    await animate(path, { d: shapes.circle }, { duration: 0.24, ease: [0.34, 1.56, 0.64, 1] }).finished;
+    await animate(blobEls(), { d: shapes.circle }, { duration: 0.24, ease: [0.34, 1.56, 0.64, 1] }).finished;
 
     // Released as soon as the blob is home. The glass is still resolving, but holding
     // the lock for it would swallow clicks for ~400ms after the rail looks settled.
@@ -488,24 +697,36 @@ const SidebarMorphPage = () => {
 
   return (
     <>
+      <div
+        className="fixed inset-0 -z-10 transition-colors duration-300 ease-out"
+        style={{ background: theme.page }}
+      />
+
       {/* The rail is centred by its own midpoint, so nudge it by the gap between that
           midpoint and the pivot icon — the pivot then lands on the same point in both
           orientations instead of only when the groups happen to be symmetric. */}
       {/* The container takes its new silhouette outright — only its contents animate. */}
       <div
         ref={railWrapRef}
-        className={`bg-[oklch(0.15_0_0)] rounded-[18px] shadow-[inset_0.5px_0.6px_0.5px_#f9f9f913] ${
-          horizontal ? "h-14" : "w-14"
-        }`}
+        className={`relative rounded-[18px] ${horizontal ? "h-14" : "w-14"}`}
         style={{ transform: `translate${axis}(${pivotShift}px)` }}
       >
+        {/* The surface is its own layer so a flip can blur it without touching the
+            icons on top — blurring the wrapper would soften the pivot too, and the
+            pivot is the one thing meant to stay sharp. */}
+        <div
+          ref={railBgRef}
+          className="absolute inset-0 rounded-[18px]"
+          style={{ background: theme.rail, boxShadow: bevel(theme) }}
+        />
         <aside
           ref={railRef}
           // Second bevel at half the wrapper's strength; it needs the same radius or
           // the inset would trace square corners inside the pill.
-          className={`relative flex items-center gap-10 rounded-[18px] shadow-[inset_0.5px_0.6px_0.5px_#f9f9f913] ${
+          className={`relative flex items-center gap-10 rounded-[18px] ${
             horizontal ? "flex-row py-2 px-4" : "flex-col px-2 py-4"
           }`}
+          style={{ boxShadow: bevel(theme, 0.5) }}
         >
           <svg
             className={`absolute pointer-events-none ${
@@ -525,6 +746,22 @@ const SidebarMorphPage = () => {
                   the cutoff, and the recovered edge bows inward — those concave fillets
                   are the join. Sigma is the reach; too much and the resting blobs bridge
                   into one continuous pill before anything moves. */}
+              {/* Inner rim light. Flood white, knock out the shape to keep only what
+                  falls outside it, offset and blur that, then clip it back inside the
+                  shape — the result hugs the edge from within. It has to live on its own
+                  layer above the merge, because the goo blurs colour at sigma 5 and would
+                  wash a rim this fine away entirely. */}
+              <filter id="blob-rim" x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
+                <feFlood floodColor="#ffffff" floodOpacity={theme.rimAlpha} result="light" />
+                <feComposite in="light" in2="SourceAlpha" operator="out" result="outside" />
+                <feOffset in="outside" dx="0.9" dy="1.1" result="lifted" />
+                <feGaussianBlur in="lifted" stdDeviation="1.5" result="soft" />
+                {/* Only the rim is emitted — SourceGraphic is deliberately dropped. The
+                    path's fill exists purely to define the mask, so the body keeps
+                    coming from the translucent layer underneath. */}
+                <feComposite in="soft" in2="SourceAlpha" operator="in" />
+              </filter>
+
               <filter id="blob-goo" x="-100%" y="-20%" width="300%" height="140%" colorInterpolationFilters="sRGB">
                 <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blurred" />
                 <feColorMatrix
@@ -562,17 +799,32 @@ const SidebarMorphPage = () => {
                 />
               </filter>
             </defs>
-            <g filter="url(#blob-goo)">
-              {slotPos.map((p, i) => (
-                <circle
-                  key={i}
-                  cx={horizontal ? p + LINK_SIZE / 2 : 20}
-                  cy={horizontal ? 20 : p + LINK_SIZE / 2}
-                  r={IDLE_RADIUS}
-                  fill={IDLE_FILL}
-                />
-              ))}
-              <path ref={indicatorRef} d={shapes.circle} fill={ACTIVE_FILL} />
+            {/* Two nested groups because an element takes one filter: the inner one
+                merges the blobs, the outer refracts the merged result. The blob is the
+                button, so it gets the same glass treatment as the icon it lands under —
+                and at rest the displacement scale is 0, so this is inert. */}
+            <g filter="url(#liquid-glass)">
+              <g filter="url(#blob-goo)" opacity={theme.blobOpacity}>
+                {slotPos.map((p, i) => (
+                  <circle
+                    key={i}
+                    cx={horizontal ? p + LINK_SIZE / 2 : 20}
+                    cy={horizontal ? 20 : p + LINK_SIZE / 2}
+                    r={IDLE_RADIUS}
+                    fill={theme.idle}
+                  />
+                ))}
+                <path ref={indicatorRef} d={shapes.circle} fill={theme.active} />
+              </g>
+              {/* A second copy of the blob, kept in lockstep by setBlobPath/Transform.
+                  It carries no fill of its own — only the rim — so it reads as the lit
+                  edge of the glass body underneath rather than a shape in its own right.
+                  It sits outside the goo so the rim survives, and only the active blob
+                  is duplicated, so the resting blobs never get rims. */}
+              {/* Opaque fill on purpose: the filter reads SourceAlpha to build the rim,
+                  so a translucent fill would scale the rim down with it. Nothing of this
+                  fill is drawn — the filter emits the rim alone. */}
+              <path ref={glassRef} d={shapes.circle} fill="#ffffff" filter="url(#blob-rim)" />
             </g>
           </svg>
 
@@ -581,9 +833,11 @@ const SidebarMorphPage = () => {
           {hovered !== null && slotPos[hovered] !== undefined && (
             <div
               role="tooltip"
-              className="pointer-events-none absolute z-10 flex h-6 items-center whitespace-nowrap rounded-lg bg-[oklch(0.25_0_0)] px-1.5 font-sans text-[13px] text-[#C2C2C2]"
-              style={
-                horizontal
+              className="pointer-events-none absolute z-10 flex h-6 items-center whitespace-nowrap rounded-[6px] px-2 font-sans text-[12px]"
+              style={{
+                background: theme.tooltip,
+                color: theme.tooltipText,
+                ...(horizontal
                   ? {
                       left: slotPos[hovered] + LINK_SIZE / 2,
                       bottom: "100%",
@@ -595,8 +849,8 @@ const SidebarMorphPage = () => {
                       left: "100%",
                       transform: "translateY(-50%)",
                       marginLeft: TOOLTIP_GAP,
-                    }
-              }
+                    }),
+              }}
             >
               {RAIL_ITEMS[hovered].label}
             </div>
@@ -625,7 +879,7 @@ const SidebarMorphPage = () => {
                     onFocus={() => setHovered(i)}
                     onBlur={handleHoverEnd}
                     className="w-10 h-10 flex items-center justify-center bg-transparent relative cursor-pointer transition-colors duration-200 ease-out"
-                    style={{ color: active ? "#C2C2C2" : "#868686" }}
+                    style={{ color: active ? theme.iconActive : theme.icon }}
                   >
                     <span
                       ref={(el) => {
@@ -644,25 +898,66 @@ const SidebarMorphPage = () => {
           ))}
         </aside>
       </div>
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 flex gap-1 rounded-full bg-[oklch(0.15_0_0)] p-1 shadow-[inset_0.5px_0.6px_0.5px_#f9f9f926]">
-        {(["stack", "row"] as Orientation[]).map((mode) => (
-          <button
-            key={mode}
-            // Flipping mid-travel would strand the blob against stale measurements.
-            onClick={() => flipTo(mode)}
-            disabled={mode === "row" && narrow}
-            title={mode === "row" && narrow ? "Needs a wider viewport" : undefined}
-            className="rounded-full px-4 py-1.5 text-xs capitalize cursor-pointer transition-colors duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-40"
-            style={{
-              color: orientation === mode ? "#C2C2C2" : "#868686",
-              background: orientation === mode ? ACTIVE_FILL : "transparent",
-            }}
-          >
-            {mode}
-          </button>
-        ))}
-      </div>
+      <div className="absolute top-12 left-1/2 -translate-x-1/2 flex gap-3">
+        <div
+          className="flex gap-1 rounded-full p-1"
+          style={{ background: theme.rail, boxShadow: bevel(theme, 2) }}
+        >
+          {(["stack", "row"] as Orientation[]).map((option) => (
+            <button
+              key={option}
+              // Flipping mid-travel would strand the blob against stale measurements.
+              onClick={() => flipTo(option)}
+              disabled={option === "row" && narrow}
+              // The label is the only name left now the text is gone.
+              aria-label={`${option} layout`}
+              aria-pressed={orientation === option}
+              title={option === "row" && narrow ? "Needs a wider viewport" : undefined}
+              className="grid h-8 w-8 place-items-center rounded-full cursor-pointer transition-colors duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-40"
+              style={{
+                color: orientation === option ? theme.iconActive : theme.icon,
+                background: orientation === option ? theme.active : "transparent",
+              }}
+            >
+              {option === "stack" ? (
+                <Stack color="currentColor" />
+              ) : (
+                <Layers color="currentColor" />
+              )}
+            </button>
+          ))}
+        </div>
 
+        {/* One glyph at a time. Both are always mounted and stacked; the outgoing one
+            rotates and scales away as the incoming one rotates in, so the swap is a
+            single continuous turn rather than a cut. Counter-rotating them keeps the
+            motion going the same way whichever direction you toggle. */}
+        <button
+          onClick={() => setThemeName(themeName === "dark" ? "light" : "dark")}
+          aria-label={themeName === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          className="relative grid h-10 w-10 place-items-center rounded-full cursor-pointer"
+          style={{ background: theme.rail, boxShadow: bevel(theme, 2), color: theme.iconActive }}
+        >
+          <span
+            className={`absolute transition-all duration-500 ease-out motion-reduce:transition-none ${
+              themeName === "light"
+                ? "rotate-0 scale-100 opacity-100"
+                : "-rotate-90 scale-50 opacity-0"
+            }`}
+          >
+            <Sun color="currentColor" />
+          </span>
+          <span
+            className={`absolute transition-all duration-500 ease-out motion-reduce:transition-none ${
+              themeName === "dark"
+                ? "rotate-0 scale-100 opacity-100"
+                : "rotate-90 scale-50 opacity-0"
+            }`}
+          >
+            <Moon color="currentColor" />
+          </span>
+        </button>
+      </div>
     </>
   );
 };
