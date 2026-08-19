@@ -14,11 +14,19 @@ const circleRight =
 const stretchedReverse =
   "M 65,22 C 74.94,22 83,30.06 83,40 C 83,49.94 74.94,58 65,58 C 40,58 7,49.94 7,40 C 7,30.06 40,22 65,22 Z";
 
-const nudgeRight =
-  "M 25,22 C 38,22 53,30.06 53,40 C 53,49.94 38,58 25,58 C 15.06,58 7,49.94 7,40 C 7,30.06 15.06,22 25,22 Z";
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-const nudgeLeft =
-  "M 65,22 C 74.94,22 83,30.06 83,40 C 83,49.94 74.94,58 65,58 C 52,58 37,49.94 37,40 C 37,30.06 52,22 65,22 Z";
+const getNudgeRight = (t: number) => {
+  const h = lerp(34.94, 42, t);
+  const e = lerp(43, 58, t);
+  return `M 25,22 C ${h},22 ${e},30.06 ${e},40 C ${e},49.94 ${h},58 25,58 C 15.06,58 7,49.94 7,40 C 7,30.06 15.06,22 25,22 Z`;
+};
+
+const getNudgeLeft = (t: number) => {
+  const h = lerp(55.06, 48, t);
+  const e = lerp(47, 32, t);
+  return `M 65,22 C 74.94,22 83,30.06 83,40 C 83,49.94 74.94,58 65,58 C ${h},58 ${e},49.94 ${e},40 C ${e},30.06 ${h},22 65,22 Z`;
+};
 
 const MorphSwitch = () => {
   const [checked, setChecked] = useState(false);
@@ -26,6 +34,7 @@ const MorphSwitch = () => {
   const trackRef = useRef<SVGRectElement>(null);
   const isAnimating = useRef(false);
   const isNudged = useRef(false);
+  const lastNudgePath = useRef<string | null>(null);
 
   const handleHover = (e: React.MouseEvent<HTMLInputElement>) => {
     if (isAnimating.current || !pathRef.current) return;
@@ -33,10 +42,14 @@ const MorphSwitch = () => {
     const x = (e.clientX - rect.left) / rect.width;
     const onOppositeSide = checked ? x < 0.5 : x > 0.5;
 
-    if (onOppositeSide && !isNudged.current) {
+    if (onOppositeSide) {
       isNudged.current = true;
-      animate(pathRef.current, { d: checked ? nudgeLeft : nudgeRight }, { duration: 0.15 });
-    } else if (!onOppositeSide && isNudged.current) {
+      const t = checked ? 1 - x * 2 : (x - 0.5) * 2;
+      const clamped = Math.max(0, Math.min(1, t));
+      const nudgePath = checked ? getNudgeLeft(clamped) : getNudgeRight(clamped);
+      lastNudgePath.current = nudgePath;
+      pathRef.current.setAttribute("d", nudgePath);
+    } else if (isNudged.current) {
       isNudged.current = false;
       animate(pathRef.current, { d: checked ? circleRight : circleLeft }, { duration: 0.15 });
     }
@@ -45,7 +58,10 @@ const MorphSwitch = () => {
   const handleHoverEnd = () => {
     if (isAnimating.current || !pathRef.current || !isNudged.current) return;
     isNudged.current = false;
-    animate(pathRef.current, { d: checked ? circleRight : circleLeft }, { duration: 0.15 });
+    const restPath = checked ? circleRight : circleLeft;
+    const from = lastNudgePath.current || restPath;
+    animate(pathRef.current, { d: [from, restPath] }, { duration: 0.2, ease: [0.34, 1.56, 0.64, 1] });
+    lastNudgePath.current = null;
   };
 
   const animateSwitch = async (toChecked: boolean) => {
