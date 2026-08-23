@@ -5,13 +5,18 @@ import { SquircleNoScript } from "@squircle-js/react";
 import { Agentation } from "agentation";
 import "./globals.css";
 
-// Inter Display is the opsz 32 end of Inter's optical-size axis, pinned in
-// globals.css. Self-hosted rather than via next/font/google: that path emits a
-// wght-only file, so the `opsz` setting silently does nothing.
+// Inter Display, self-hosted from the rsms/inter v4.1 release on GitHub (web/ folder,
+// OFL). These are the real Display cuts rather than InterVariable pinned to opsz 32 —
+// same design intent, but the optical size is baked into the outlines, so nothing
+// depends on a font-variation-settings declaration surviving. Only the three weights
+// the app actually asks for are shipped; add a file here before using a fourth.
 const interDisplay = localFont({
-  src: "./fonts/InterVariable.woff2",
+  src: [
+    { path: "./fonts/InterDisplay-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/InterDisplay-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/InterDisplay-SemiBold.woff2", weight: "600", style: "normal" },
+  ],
   variable: "--font-inter-display",
-  weight: "100 900",
   display: "swap",
 });
 
