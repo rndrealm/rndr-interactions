@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { motion } from "motion/react";
 
 const tokens = [
@@ -23,6 +23,7 @@ const tokens = [
 ];
 
 const ICON_SPACE = 20;
+const STAGGER_MS = 100;
 
 // Pill and page are the same white — the stroke, contact shadow and ambient shadow are
 // the only things drawing the pill, so it reads as raised paper rather than a fill.
@@ -58,6 +59,8 @@ const PILL_SHADOW = [
 const GroupTags = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [widths, setWidths] = useState<Map<string, number>>(new Map());
+  const [isStaggering, setIsStaggering] = useState(false);
+  const staggerTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const buttonRef = useCallback(
     (token: string) => (el: HTMLButtonElement | null) => {
@@ -74,9 +77,39 @@ const GroupTags = () => {
   );
 
   const toggleTag = (tag: string) => {
+    if (isStaggering) return;
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
+  };
+
+  const toggleAll = () => {
+    if (isStaggering) return;
+
+    const allSelected = tokens.every((t) => selectedTags.includes(t));
+    const selecting = !allSelected;
+
+    const toToggle = tokens
+      .filter((t) =>
+        selecting ? !selectedTags.includes(t) : selectedTags.includes(t),
+      )
+      .sort(() => Math.random() - 0.5);
+
+    if (toToggle.length === 0) return;
+
+    setIsStaggering(true);
+    staggerTimers.current.forEach(clearTimeout);
+    staggerTimers.current = [];
+
+    toToggle.forEach((tag, i) => {
+      const timer = setTimeout(() => {
+        setSelectedTags((prev) =>
+          selecting ? [...prev, tag] : prev.filter((t) => t !== tag),
+        );
+        if (i === toToggle.length - 1) setIsStaggering(false);
+      }, i * STAGGER_MS);
+      staggerTimers.current.push(timer);
+    });
   };
 
   return (
@@ -86,7 +119,7 @@ const GroupTags = () => {
     >
       {/* Rows need more clearance than columns: the ambient shadow reaches ~16px, so at
           an even 8px gap it lands on the pills in the next row instead of on the page. */}
-      <div className="flex flex-wrap max-w-125 gap-x-2 gap-y-4">
+      <div className="flex flex-wrap max-w-140 gap-x-2 gap-y-4">
         {tokens.map((token) => {
           const isSelected = selectedTags.includes(token);
           const baseWidth = widths.get(token);
@@ -103,9 +136,6 @@ const GroupTags = () => {
               layout="size"
               initial={false}
               animate={{ width: targetWidth }}
-              // 0.96 is the floor for a press — below 0.95 it stops reading as tactile
-              // and starts reading as a bounce. Driven by the same spring as the width
-              // so a release mid-press is interrupted rather than queued.
               whileTap={{ scale: 0.96 }}
               transition={{ type: "spring", stiffness: 500, damping: 30 }}
               onClick={() => toggleTag(token)}
@@ -113,6 +143,7 @@ const GroupTags = () => {
                 "pl-4.5 pr-3.5 py-1.5 rounded-full border-none cursor-pointer flex items-center whitespace-nowrap overflow-hidden",
                 "transition-colors duration-200 ease-out",
                 isSelected ? PILL_SURFACE.selected : PILL_SURFACE.idle,
+                isStaggering && "pointer-events-none",
               )}
               style={{
                 color: isSelected ? THEME.textActive : THEME.text,
@@ -121,9 +152,6 @@ const GroupTags = () => {
             >
               <span className="text-sm font-medium">{token}</span>
               <div className="w-0 shrink-0 overflow-visible">
-                {/* One filled disc with the tick knocked out of it via evenodd, so the
-                    check is a hole showing the pill surface rather than a second shape
-                    that has to be kept in sync with it. */}
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
@@ -142,6 +170,27 @@ const GroupTags = () => {
             </motion.button>
           );
         })}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          onClick={toggleAll}
+          className={cn(
+            "px-4.5 py-1.5 rounded-full border-none cursor-pointer whitespace-nowrap",
+            "transition-colors duration-200 ease-out",
+            PILL_SURFACE.idle,
+            isStaggering && "pointer-events-none",
+          )}
+          style={{
+            color: THEME.text,
+            boxShadow: PILL_SHADOW,
+          }}
+        >
+          <span className="text-sm font-medium">
+            {tokens.every((t) => selectedTags.includes(t))
+              ? "Deselect All"
+              : "Select All"}
+          </span>
+        </motion.button>
       </div>
     </main>
   );
