@@ -34,7 +34,7 @@ const AiInput = () => {
       setExhausted(true);
     } else {
       editor.commands.clearContent();
-      setLoading(true);
+      // setLoading(true);
     }
   };
 
@@ -153,12 +153,22 @@ const AiInput = () => {
           }}
         >
           <div className="relative">
-            <AssetPreview
-              assets={assets}
-              onRemove={(id) =>
-                setAssets((prev) => prev.filter((a) => a.id !== id))
+            <motion.div
+              animate={{ height: assets.length > 0 ? "auto" : 0 }}
+              transition={
+                assets.length > 0
+                  ? { duration: 0 }
+                  : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
               }
-            />
+              style={{ overflow: "hidden" }}
+            >
+              <AssetPreview
+                assets={assets}
+                onRemove={(id) =>
+                  setAssets((prev) => prev.filter((a) => a.id !== id))
+                }
+              />
+            </motion.div>
             <div className="pt-2">
               <Tiptap editor={editor}>
                 <Tiptap.Content
