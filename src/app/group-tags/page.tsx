@@ -86,7 +86,7 @@ const GroupTags = () => {
     >
       {/* Rows need more clearance than columns: the ambient shadow reaches ~16px, so at
           an even 8px gap it lands on the pills in the next row instead of on the page. */}
-      <div className="flex flex-wrap max-w-[500px] gap-x-2 gap-y-4">
+      <div className="flex flex-wrap max-w-125 gap-x-2 gap-y-4">
         {tokens.map((token) => {
           const isSelected = selectedTags.includes(token);
           const baseWidth = widths.get(token);
@@ -100,7 +100,7 @@ const GroupTags = () => {
             <motion.button
               key={token}
               ref={buttonRef(token)}
-              layout
+              layout="size"
               initial={false}
               animate={{ width: targetWidth }}
               // 0.96 is the floor for a press — below 0.95 it stops reading as tactile

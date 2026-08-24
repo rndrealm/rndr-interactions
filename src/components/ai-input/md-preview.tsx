@@ -1,9 +1,6 @@
 import { Asset } from "./upload-button";
 import { X } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 
 interface IProps {
@@ -58,7 +55,7 @@ const MdPreview = ({ asset, onRemove }: IProps) => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           showCloseButton={false}
-          className="max-w-xl max-h-[80vh] flex flex-col gap-0 p-0 overflow-hidden data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-4 data-[state=open]:duration-300 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-4 data-[state=closed]:duration-200"
+          className="max-w-3xl max-h-[80vh] flex flex-col gap-0 p-0 overflow-hidden data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-4 data-[state=open]:duration-300 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-4 data-[state=closed]:duration-200"
         >
           <div className="flex items-start justify-between px-5 pt-5 pb-3">
             <div>
