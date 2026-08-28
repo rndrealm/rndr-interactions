@@ -121,57 +121,57 @@ const GroupTags = () => {
         {/* Rows need more clearance than columns: the ambient shadow reaches ~16px, so
             at an even 8px gap it lands on the pills in the next row instead of on the
             page. */}
-        <div className="flex flex-wrap max-w-140 gap-x-2 gap-y-4">
-        {tokens.map((token) => {
-          const isSelected = selectedTags.includes(token);
-          const baseWidth = widths.get(token);
-          const targetWidth = baseWidth
-            ? isSelected
-              ? baseWidth + ICON_SPACE
-              : baseWidth
-            : "auto";
+        <div className="flex flex-wrap max-w-130 gap-x-2 gap-y-4">
+          {tokens.map((token) => {
+            const isSelected = selectedTags.includes(token);
+            const baseWidth = widths.get(token);
+            const targetWidth = baseWidth
+              ? isSelected
+                ? baseWidth + ICON_SPACE
+                : baseWidth
+              : "auto";
 
-          return (
-            <motion.button
-              key={token}
-              ref={buttonRef(token)}
-              layout="size"
-              initial={false}
-              animate={{ width: targetWidth }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              onClick={() => toggleTag(token)}
-              className={cn(
-                "pl-4.5 pr-3.5 py-1.5 rounded-full border-none cursor-pointer flex items-center whitespace-nowrap overflow-hidden",
-                "transition-colors duration-200 ease-out",
-                isSelected ? PILL_SURFACE.selected : PILL_SURFACE.idle,
-                isStaggering && "pointer-events-none",
-              )}
-              style={{
-                color: isSelected ? THEME.textActive : THEME.text,
-                boxShadow: PILL_SHADOW,
-              }}
-            >
-              <span className="text-sm font-medium">{token}</span>
-              <div className="w-0 shrink-0 overflow-visible">
-                <svg
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  aria-hidden
-                  className="ml-2 size-3 transition-opacity duration-200"
-                  style={{ opacity: isSelected ? 1 : 0 }}
-                >
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M6 1C8.7614 1 11 3.23858 11 6C11 8.7614 8.7614 11 6 11C3.23858 11 1 8.7614 1 6C1 3.23858 3.23858 1 6 1ZM7.7793 4.08545C7.55025 3.9313 7.2397 3.99178 7.08545 4.22071L5.23635 6.9668L4.35352 6.084C4.15826 5.8887 3.84175 5.8887 3.64649 6.084C3.45122 6.27925 3.45122 6.59575 3.64649 6.791L4.95899 8.1035C5.06465 8.20915 5.21215 8.26195 5.36085 8.24755C5.5094 8.2331 5.64365 8.1531 5.72705 8.0293L7.91455 4.7793C8.0687 4.55028 8.00825 4.23969 7.7793 4.08545Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </div>
-            </motion.button>
-          );
-        })}
+            return (
+              <motion.button
+                key={token}
+                ref={buttonRef(token)}
+                layout="size"
+                initial={false}
+                animate={{ width: targetWidth }}
+                whileTap={{ scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                onClick={() => toggleTag(token)}
+                className={cn(
+                  "pl-4.5 pr-3.5 py-1.5 rounded-full border-none cursor-pointer flex items-center whitespace-nowrap overflow-hidden",
+                  "transition-colors duration-200 ease-out",
+                  isSelected ? PILL_SURFACE.selected : PILL_SURFACE.idle,
+                  isStaggering && "pointer-events-none",
+                )}
+                style={{
+                  color: isSelected ? THEME.textActive : THEME.text,
+                  boxShadow: PILL_SHADOW,
+                }}
+              >
+                <span className="text-sm font-medium">{token}</span>
+                <div className="w-0 shrink-0 overflow-visible">
+                  <svg
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    aria-hidden
+                    className="ml-2 size-3 transition-opacity duration-200"
+                    style={{ opacity: isSelected ? 1 : 0 }}
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M6 1C8.7614 1 11 3.23858 11 6C11 8.7614 8.7614 11 6 11C3.23858 11 1 8.7614 1 6C1 3.23858 3.23858 1 6 1ZM7.7793 4.08545C7.55025 3.9313 7.2397 3.99178 7.08545 4.22071L5.23635 6.9668L4.35352 6.084C4.15826 5.8887 3.84175 5.8887 3.64649 6.084C3.45122 6.27925 3.45122 6.59575 3.64649 6.791L4.95899 8.1035C5.06465 8.20915 5.21215 8.26195 5.36085 8.24755C5.5094 8.2331 5.64365 8.1531 5.72705 8.0293L7.91455 4.7793C8.0687 4.55028 8.00825 4.23969 7.7793 4.08545Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
 
         {/* mt-20 rather than a column gap: the grid's ambient shadow already reaches
