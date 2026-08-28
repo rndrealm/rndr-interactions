@@ -117,9 +117,11 @@ const GroupTags = () => {
       className="w-screen h-screen flex items-center justify-center"
       style={{ background: THEME.page }}
     >
-      {/* Rows need more clearance than columns: the ambient shadow reaches ~16px, so at
-          an even 8px gap it lands on the pills in the next row instead of on the page. */}
-      <div className="flex flex-wrap max-w-140 gap-x-2 gap-y-4">
+      <div className="flex flex-col items-start">
+        {/* Rows need more clearance than columns: the ambient shadow reaches ~16px, so
+            at an even 8px gap it lands on the pills in the next row instead of on the
+            page. */}
+        <div className="flex flex-wrap max-w-140 gap-x-2 gap-y-4">
         {tokens.map((token) => {
           const isSelected = selectedTags.includes(token);
           const baseWidth = widths.get(token);
@@ -153,7 +155,7 @@ const GroupTags = () => {
               <span className="text-sm font-medium">{token}</span>
               <div className="w-0 shrink-0 overflow-visible">
                 <svg
-                  viewBox="0 0 24 24"
+                  viewBox="0 0 12 12"
                   fill="none"
                   aria-hidden
                   className="ml-2 size-3 transition-opacity duration-200"
@@ -162,7 +164,7 @@ const GroupTags = () => {
                   <path
                     fillRule="evenodd"
                     clipRule="evenodd"
-                    d="M12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2ZM15.667 8.12695C15.3228 7.89661 14.8574 7.98889 14.627 8.33301L10.4482 14.5723L8.28125 12.3945C7.98911 12.1009 7.51434 12.0995 7.2207 12.3916C6.92733 12.6838 6.9267 13.1586 7.21875 13.4521L10.0312 16.2793C10.1897 16.4384 10.4112 16.5177 10.6348 16.4961C10.8584 16.4744 11.0605 16.3537 11.1855 16.167L15.873 9.16699C16.1034 8.82283 16.0111 8.35739 15.667 8.12695Z"
+                    d="M6 1C8.7614 1 11 3.23858 11 6C11 8.7614 8.7614 11 6 11C3.23858 11 1 8.7614 1 6C1 3.23858 3.23858 1 6 1ZM7.7793 4.08545C7.55025 3.9313 7.2397 3.99178 7.08545 4.22071L5.23635 6.9668L4.35352 6.084C4.15826 5.8887 3.84175 5.8887 3.64649 6.084C3.45122 6.27925 3.45122 6.59575 3.64649 6.791L4.95899 8.1035C5.06465 8.20915 5.21215 8.26195 5.36085 8.24755C5.5094 8.2331 5.64365 8.1531 5.72705 8.0293L7.91455 4.7793C8.0687 4.55028 8.00825 4.23969 7.7793 4.08545Z"
                     fill="currentColor"
                   />
                 </svg>
@@ -170,12 +172,16 @@ const GroupTags = () => {
             </motion.button>
           );
         })}
+        </div>
+
+        {/* mt-20 rather than a column gap: the grid's ambient shadow already reaches
+            ~16px past its last row, so the 80px is measured from the pills themselves. */}
         <motion.button
           whileTap={{ scale: 0.96 }}
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
           onClick={toggleAll}
           className={cn(
-            "px-4.5 py-1.5 rounded-full border-none cursor-pointer whitespace-nowrap",
+            "mt-20 px-4.5 py-1.5 rounded-full border-none cursor-pointer whitespace-nowrap",
             "transition-colors duration-200 ease-out",
             PILL_SURFACE.idle,
             isStaggering && "pointer-events-none",
