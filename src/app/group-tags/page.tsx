@@ -31,6 +31,7 @@ const STAGGER_MS = 100;
 const THEME = {
   page: "#ffffff",
   text: "oklch(64.34% 0 0)",
+  textActive: "#1f1f1f",
 };
 
 // Hover and selected are both a hair off white — hover the lighter of the two, so
@@ -38,36 +39,7 @@ const THEME = {
 // classes rather than inline style so hover stays in CSS and costs no re-render.
 const PILL_SURFACE = {
   idle: "bg-white hover:bg-[#f9f9f9]",
-};
-
-// Selected is a lit button rather than a tint: a vertical gradient, a matching ring, and
-// inset highlights top and bottom that read as a bevel catching light on both edges.
-// Inline rather than classes because a gradient is a background-image, which Tailwind's
-// colour utilities do not cover.
-//
-// Every stop is pinned to LINK_HUE with its original lightness and chroma carried over
-// from the indigo, so the ramp keeps its shape and only the hue moves. The source ran
-// 268-276.5deg across its stops; holding one hue removes that drift.
-const LINK_HUE = 259.8;
-
-const SELECTED = {
-  background: [
-    "linear-gradient(180deg,",
-    `oklch(0.519 0.201 ${LINK_HUE}) -50.29%,`,
-    `oklch(0.591 0.175 ${LINK_HUE}) -11.05%,`,
-    `oklch(0.669 0.149 ${LINK_HUE}) 100.63%,`,
-    // Chroma clamped from 0.240: at this lightness and hue it falls outside sRGB.
-    `oklch(0.562 0.227 ${LINK_HUE}) 121.05%)`,
-  ].join(" "),
-  boxShadow: [
-    `0 0 0 1px oklch(0.543 0.204 ${LINK_HUE} / 0.7)`,
-    `inset 0 1px 1px 0 oklch(0.532 0.204 ${LINK_HUE})`,
-    `inset 0 -1px 1px 0 oklch(0.532 0.204 ${LINK_HUE})`,
-  ].join(", "),
-  color: "#fff",
-  // Three lengths, not four — text-shadow has no spread parameter, and a fourth value
-  // invalidates the whole declaration.
-  textShadow: "0 1px 3px rgba(0, 0, 0, 0.25)",
+  selected: "bg-[#f8f8f8]",
 };
 
 // 1px stroke, contact shadow, soft ambient — stacked tightest-to-widest. The two
@@ -172,14 +144,13 @@ const GroupTags = () => {
               className={cn(
                 "pl-4.5 pr-3.5 py-1.5 rounded-full border-none cursor-pointer flex items-center whitespace-nowrap overflow-hidden",
                 "transition-colors duration-200 ease-out",
-                !isSelected && PILL_SURFACE.idle,
+                isSelected ? PILL_SURFACE.selected : PILL_SURFACE.idle,
                 isStaggering && "pointer-events-none",
               )}
-              style={
-                isSelected
-                  ? SELECTED
-                  : { color: THEME.text, boxShadow: PILL_SHADOW }
-              }
+              style={{
+                color: isSelected ? THEME.textActive : THEME.text,
+                boxShadow: PILL_SHADOW,
+              }}
             >
               <span className="text-sm font-medium">{token}</span>
               <div className="w-0 shrink-0 overflow-visible">
@@ -194,7 +165,7 @@ const GroupTags = () => {
                     fillRule="evenodd"
                     clipRule="evenodd"
                     d="M6 1C8.7614 1 11 3.23858 11 6C11 8.7614 8.7614 11 6 11C3.23858 11 1 8.7614 1 6C1 3.23858 3.23858 1 6 1ZM7.7793 4.08545C7.55025 3.9313 7.2397 3.99178 7.08545 4.22071L5.23635 6.9668L4.35352 6.084C4.15826 5.8887 3.84175 5.8887 3.64649 6.084C3.45122 6.27925 3.45122 6.59575 3.64649 6.791L4.95899 8.1035C5.06465 8.20915 5.21215 8.26195 5.36085 8.24755C5.5094 8.2331 5.64365 8.1531 5.72705 8.0293L7.91455 4.7793C8.0687 4.55028 8.00825 4.23969 7.7793 4.08545Z"
-                    fill={`oklch(0.778 0.113 ${LINK_HUE})`}
+                    fill="currentColor"
                   />
                 </svg>
               </div>
