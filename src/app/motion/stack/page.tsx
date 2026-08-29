@@ -22,7 +22,7 @@ export function TabButton(props: ITabButton) {
   return (
     <button
       type="button"
-      className={`relative px-4 py-1 rounded-[20px]`}
+      className={`relative px-4 py-1 rounded-[20px] cursor-pointer`}
       onClick={onClick}
     >
       {isActive && (
