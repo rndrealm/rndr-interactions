@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { animate } from "motion";
 import { SidebarLinks } from "@/lib/static";
 import {
@@ -36,7 +42,7 @@ const blob = (
   back: number,
   front: number,
   cross: number = RADIUS,
-  horizontal = false
+  horizontal = false,
 ) => {
   const lo = 20 - back;
   const hi = 20 + front;
@@ -46,7 +52,8 @@ const blob = (
   const ctrlHi = 20 + front * KAPPA;
   const k = cross * KAPPA;
   // main = along travel, cr = across it.
-  const P = (main: number, cr: number) => (horizontal ? `${main},${cr}` : `${cr},${main}`);
+  const P = (main: number, cr: number) =>
+    horizontal ? `${main},${cr}` : `${cr},${main}`;
   return (
     `M ${P(lo, 20)} C ${P(lo, 20 + k)} ${P(ctrlLo, far)} ${P(20, far)} ` +
     `C ${P(ctrlHi, far)} ${P(hi, 20 + k)} ${P(hi, 20)} ` +
@@ -113,7 +120,7 @@ const WIDTH_RATIO = 0.3;
 const MIN_WIDTH = 8;
 const REBOUND = 7;
 // Only a genuine drop gets a sound; short hops would turn the rail into a xylophone.
-const IMPACT_VOLUME = 0.28;
+const IMPACT_VOLUME = 0.28 * 0.075;
 const IMPACT_SOUND = "/sounds/water-drop.wav";
 
 // Liquid-glass settle on the icon the blob lands under. Feeding the same noise channel
@@ -237,13 +244,13 @@ const RAIL_SOURCE: RailItem[][] = [
 ];
 
 const RAIL_GROUPS: RailItem[][] = RAIL_SOURCE.map((group) =>
-  group.map((item) => ({ ...item, activeIcon: ACTIVE_ICONS[item.label] }))
+  group.map((item) => ({ ...item, activeIcon: ACTIVE_ICONS[item.label] })),
 );
 
 const RAIL_ITEMS = RAIL_GROUPS.flat();
 // Index each item once, globally, so the blob can travel across group boundaries.
 const GROUP_OFFSETS = RAIL_GROUPS.map((_, g) =>
-  RAIL_GROUPS.slice(0, g).reduce((n, group) => n + group.length, 0)
+  RAIL_GROUPS.slice(0, g).reduce((n, group) => n + group.length, 0),
 );
 
 type Orientation = "stack" | "row";
@@ -257,7 +264,7 @@ const PIVOT_INDEX = 4;
 const SidebarMorphPage = () => {
   const [activeIndex, setActiveIndex] = useState(1);
   const [orientation, setOrientation] = useState<Orientation>("stack");
-  const [themeName, setThemeName] = useState<"dark" | "light">("dark");
+  const [themeName, setThemeName] = useState<"dark" | "light">("light");
   const [hovered, setHovered] = useState<number | null>(null);
   const theme = THEMES[themeName];
   // Slot positions are measured rather than derived: the rail has 40px gaps between
@@ -356,16 +363,19 @@ const SidebarMorphPage = () => {
   // glass layer on top of it. Both must always carry the same shape and position, so
   // every write goes through these rather than touching one element.
   const blobEls = () =>
-    [indicatorRef.current, glassRef.current].filter(Boolean) as SVGPathElement[];
+    [indicatorRef.current, glassRef.current].filter(
+      Boolean,
+    ) as SVGPathElement[];
   const setBlobTransform = (transform: string) =>
     blobEls().forEach((el) => (el.style.transform = transform));
-  const setBlobPath = (d: string) => blobEls().forEach((el) => el.setAttribute("d", d));
+  const setBlobPath = (d: string) =>
+    blobEls().forEach((el) => el.setAttribute("d", d));
 
   // Re-measured whenever the rail flips, since every slot moves onto the other axis.
   useLayoutEffect(() => {
     const rail = railRef.current;
     const positions = buttonRefs.current.map((btn) =>
-      btn ? (horizontal ? btn.offsetLeft : btn.offsetTop) : 0
+      btn ? (horizontal ? btn.offsetLeft : btn.offsetTop) : 0,
     );
     setSlotPos(positions);
     setRailLength((horizontal ? rail?.offsetWidth : rail?.offsetHeight) ?? 0);
@@ -399,16 +409,21 @@ const SidebarMorphPage = () => {
           const btn = buttonRefs.current[i];
           if (!btn) return;
           const distance = Math.abs(offset) / reach;
-          const local = clamp01((p - distance * FLIP_STAGGER) / (1 - distance * FLIP_STAGGER));
+          const local = clamp01(
+            (p - distance * FLIP_STAGGER) / (1 - distance * FLIP_STAGGER),
+          );
           const settled = easeOutCubic(local);
           btn.style.transform = `translate${axisNow}(${offset * (1 - settled)}px)`;
           const sharpness = clamp01(local / BLUR_LEAD);
-          btn.style.filter = i === PIVOT_INDEX ? "" : `blur(${FLIP_BLUR * (1 - sharpness)}px)`;
+          btn.style.filter =
+            i === PIVOT_INDEX ? "" : `blur(${FLIP_BLUR * (1 - sharpness)}px)`;
           btn.style.opacity = i === PIVOT_INDEX ? "1" : `${sharpness}`;
         });
         // Composed, not replaced — the blob still owes its slot offset underneath.
         const blobSettled = easeOutCubic(p);
-        setBlobTransform(`translate${axisNow}(${(offsets[activeIndex] ?? 0) * (1 - blobSettled)}px) ${base}`);
+        setBlobTransform(
+          `translate${axisNow}(${(offsets[activeIndex] ?? 0) * (1 - blobSettled)}px) ${base}`,
+        );
         // The surface sharpens across the whole beat, not on the icons' BLUR_LEAD ramp.
         // On that ramp it resolved in the first 45% and was already sharp while the
         // icons were still arriving, so the blur-in never read as one.
@@ -475,17 +490,23 @@ const SidebarMorphPage = () => {
           if (!btn || i === PIVOT_INDEX) return;
           // Furthest leave first: their stagger is subtracted from the far end.
           const distance = Math.abs(offset) / reach;
-          const local = clamp01((p - (1 - distance) * FLIP_STAGGER) / (1 - (1 - distance) * FLIP_STAGGER));
+          const local = clamp01(
+            (p - (1 - distance) * FLIP_STAGGER) /
+              (1 - (1 - distance) * FLIP_STAGGER),
+          );
           const softness = clamp01(local / BLUR_LEAD);
           btn.style.filter = `blur(${FLIP_BLUR * softness}px)`;
           btn.style.opacity = `${1 - softness}`;
           // Movement trails the blur, so it softens in place before folding in.
           btn.style.transform = `translate${axisWas}(${offset * easeInQuad(local)}px)`;
         });
-        setBlobTransform(`translate${axisWas}(${(offsets[activeIndex] ?? 0) * easeInQuad(p)}px) ${base}`);
+        setBlobTransform(
+          `translate${axisWas}(${(offsets[activeIndex] ?? 0) * easeInQuad(p)}px) ${base}`,
+        );
         // The surface softens on the same ramp the icons do.
         const surface = clamp01(p / BLUR_LEAD);
-        if (surfaceEl) surfaceEl.style.filter = `blur(${FLIP_BLUR * surface}px)`;
+        if (surfaceEl)
+          surfaceEl.style.filter = `blur(${FLIP_BLUR * surface}px)`;
       },
     }).finished;
 
@@ -499,7 +520,10 @@ const SidebarMorphPage = () => {
   const applyBlur = (blobPos: number, intensity: number) => {
     iconRefs.current.forEach((icon, i) => {
       if (!icon || slotPos[i] === undefined) return;
-      const proximity = Math.max(0, 1 - Math.abs(slotPos[i] - blobPos) / BLUR_REACH);
+      const proximity = Math.max(
+        0,
+        1 - Math.abs(slotPos[i] - blobPos) / BLUR_REACH,
+      );
       const blur = MAX_BLUR * proximity * intensity;
       icon.style.filter = blur > 0.05 ? `blur(${blur.toFixed(2)}px)` : "";
     });
@@ -543,23 +567,27 @@ const SidebarMorphPage = () => {
   const handleHover = (index: number) => {
     setHovered(index);
     if (reducedMotion.current) return;
-    if (isAnimating.current || !indicatorRef.current || index === activeIndex) return;
+    if (isAnimating.current || !indicatorRef.current || index === activeIndex)
+      return;
     if (!isNudged.current) {
       isNudged.current = true;
-      const nudgeShape = index > activeIndex ? shapes.nudgeForward : shapes.nudgeBack;
+      const nudgeShape =
+        index > activeIndex ? shapes.nudgeForward : shapes.nudgeBack;
       animate(blobEls(), { d: nudgeShape }, { duration: 0.15 });
     }
   };
 
   const handleHoverEnd = () => {
     setHovered(null);
-    if (isAnimating.current || !indicatorRef.current || !isNudged.current) return;
+    if (isAnimating.current || !indicatorRef.current || !isNudged.current)
+      return;
     isNudged.current = false;
     animate(blobEls(), { d: shapes.circle }, { duration: 0.15 });
   };
 
   const handleClick = async (index: number) => {
-    if (index === activeIndex || isAnimating.current || !indicatorRef.current) return;
+    if (index === activeIndex || isAnimating.current || !indicatorRef.current)
+      return;
     const to = slotPos[index];
     if (to === undefined) return;
 
@@ -589,7 +617,11 @@ const SidebarMorphPage = () => {
     if (!isFall) {
       // Neighbouring hop: slide, hold the circle, no deformation. The hover nudge has
       // to be unwound first or the blob travels still wearing it.
-      animate(blobEls(), { d: shapes.circle }, { duration: 0.12, ease: "easeOut" });
+      animate(
+        blobEls(),
+        { d: shapes.circle },
+        { duration: 0.12, ease: "easeOut" },
+      );
       await animate(from, to, {
         duration: 0.26,
         ease: [0.42, 0, 0.58, 1],
@@ -601,7 +633,11 @@ const SidebarMorphPage = () => {
       }).finished;
     } else {
       // Gather before the drop.
-      await animate(blobEls(), { d: shapes.crouch }, { duration: 0.09, ease: "easeOut" }).finished;
+      await animate(
+        blobEls(),
+        { d: shapes.crouch },
+        { duration: 0.09, ease: "easeOut" },
+      ).finished;
 
       let prevPos = from;
       let prevT = performance.now();
@@ -633,7 +669,7 @@ const SidebarMorphPage = () => {
           setBlobPath(
             velocity >= 0
               ? blob(trail, lead, cross, horizontal)
-              : blob(lead, trail, cross, horizontal)
+              : blob(lead, trail, cross, horizontal),
           );
           setBlobTransform(`translate${axis}(${p}px)`);
 
@@ -652,8 +688,10 @@ const SidebarMorphPage = () => {
 
       // Land: flatten on impact, bounce back off it, then drop in and settle. A shape
       // spring alone reads as a wobble; the blob has to actually leave the surface.
-      await animate(blobEls(), { d: forward ? shapes.impactForward : shapes.impactBack },
-        { duration: 0.07, ease: "easeOut" }
+      await animate(
+        blobEls(),
+        { d: forward ? shapes.impactForward : shapes.impactBack },
+        { duration: 0.07, ease: "easeOut" },
       ).finished;
 
       // Only a drop recoils — the recoil is gravity, so a row has none, and travelling
@@ -667,7 +705,11 @@ const SidebarMorphPage = () => {
             setBlobTransform(`translate${axis}(${p}px)`);
           },
         }).finished;
-        animate(blobEls(), { d: shapes.circle }, { duration: 0.16, ease: "easeOut" });
+        animate(
+          blobEls(),
+          { d: shapes.circle },
+          { duration: 0.16, ease: "easeOut" },
+        );
         await animate(bounceTo, to, {
           duration: 0.13,
           ease: "easeIn",
@@ -677,7 +719,11 @@ const SidebarMorphPage = () => {
         }).finished;
       }
 
-      await animate(blobEls(), { d: shapes.settle }, { duration: 0.06, ease: "easeOut" }).finished;
+      await animate(
+        blobEls(),
+        { d: shapes.settle },
+        { duration: 0.06, ease: "easeOut" },
+      ).finished;
     }
 
     currentPos.current = to;
@@ -688,7 +734,11 @@ const SidebarMorphPage = () => {
       clearBlur();
       glass = settleGlass(index, travel);
     }
-    await animate(blobEls(), { d: shapes.circle }, { duration: 0.24, ease: [0.34, 1.56, 0.64, 1] }).finished;
+    await animate(
+      blobEls(),
+      { d: shapes.circle },
+      { duration: 0.24, ease: [0.34, 1.56, 0.64, 1] },
+    ).finished;
 
     // Released as soon as the blob is home. The glass is still resolving, but holding
     // the lock for it would swallow clicks for ~400ms after the rail looks settled.
@@ -751,9 +801,25 @@ const SidebarMorphPage = () => {
                   shape — the result hugs the edge from within. It has to live on its own
                   layer above the merge, because the goo blurs colour at sigma 5 and would
                   wash a rim this fine away entirely. */}
-              <filter id="blob-rim" x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
-                <feFlood floodColor="#ffffff" floodOpacity={theme.rimAlpha} result="light" />
-                <feComposite in="light" in2="SourceAlpha" operator="out" result="outside" />
+              <filter
+                id="blob-rim"
+                x="-50%"
+                y="-50%"
+                width="200%"
+                height="200%"
+                colorInterpolationFilters="sRGB"
+              >
+                <feFlood
+                  floodColor="#ffffff"
+                  floodOpacity={theme.rimAlpha}
+                  result="light"
+                />
+                <feComposite
+                  in="light"
+                  in2="SourceAlpha"
+                  operator="out"
+                  result="outside"
+                />
                 <feOffset in="outside" dx="0.9" dy="1.1" result="lifted" />
                 <feGaussianBlur in="lifted" stdDeviation="1.5" result="soft" />
                 {/* Only the rim is emitted — SourceGraphic is deliberately dropped. The
@@ -762,8 +828,19 @@ const SidebarMorphPage = () => {
                 <feComposite in="soft" in2="SourceAlpha" operator="in" />
               </filter>
 
-              <filter id="blob-goo" x="-100%" y="-20%" width="300%" height="140%" colorInterpolationFilters="sRGB">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blurred" />
+              <filter
+                id="blob-goo"
+                x="-100%"
+                y="-20%"
+                width="300%"
+                height="140%"
+                colorInterpolationFilters="sRGB"
+              >
+                <feGaussianBlur
+                  in="SourceGraphic"
+                  stdDeviation="5"
+                  result="blurred"
+                />
                 <feColorMatrix
                   in="blurred"
                   type="matrix"
@@ -814,7 +891,11 @@ const SidebarMorphPage = () => {
                     fill={theme.idle}
                   />
                 ))}
-                <path ref={indicatorRef} d={shapes.circle} fill={theme.active} />
+                <path
+                  ref={indicatorRef}
+                  d={shapes.circle}
+                  fill={theme.active}
+                />
               </g>
               {/* A second copy of the blob, kept in lockstep by setBlobPath/Transform.
                   It carries no fill of its own — only the rim — so it reads as the lit
@@ -824,7 +905,12 @@ const SidebarMorphPage = () => {
               {/* Opaque fill on purpose: the filter reads SourceAlpha to build the rim,
                   so a translucent fill would scale the rim down with it. Nothing of this
                   fill is drawn — the filter emits the rim alone. */}
-              <path ref={glassRef} d={shapes.circle} fill="#ffffff" filter="url(#blob-rim)" />
+              <path
+                ref={glassRef}
+                d={shapes.circle}
+                fill="#ffffff"
+                filter="url(#blob-rim)"
+              />
             </g>
           </svg>
 
@@ -912,11 +998,16 @@ const SidebarMorphPage = () => {
               // The label is the only name left now the text is gone.
               aria-label={`${option} layout`}
               aria-pressed={orientation === option}
-              title={option === "row" && narrow ? "Needs a wider viewport" : undefined}
+              title={
+                option === "row" && narrow
+                  ? "Needs a wider viewport"
+                  : undefined
+              }
               className="grid h-8 w-8 place-items-center rounded-full cursor-pointer transition-colors duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-40"
               style={{
                 color: orientation === option ? theme.iconActive : theme.icon,
-                background: orientation === option ? theme.active : "transparent",
+                background:
+                  orientation === option ? theme.active : "transparent",
               }}
             >
               {option === "stack" ? (
@@ -934,9 +1025,17 @@ const SidebarMorphPage = () => {
             motion going the same way whichever direction you toggle. */}
         <button
           onClick={() => setThemeName(themeName === "dark" ? "light" : "dark")}
-          aria-label={themeName === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label={
+            themeName === "dark"
+              ? "Switch to light mode"
+              : "Switch to dark mode"
+          }
           className="relative grid h-10 w-10 place-items-center rounded-full cursor-pointer"
-          style={{ background: theme.rail, boxShadow: bevel(theme, 2), color: theme.iconActive }}
+          style={{
+            background: theme.rail,
+            boxShadow: bevel(theme, 2),
+            color: theme.iconActive,
+          }}
         >
           <span
             className={`absolute transition-all duration-500 ease-out motion-reduce:transition-none ${
