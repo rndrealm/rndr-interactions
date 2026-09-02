@@ -2,6 +2,11 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* ABC Diatype @font-face declarations. The .otf files sit in public/fonts/abc-diatype
+   and the sheet points at them with absolute /fonts/... URLs, so this is a plain
+   stylesheet import — no next/font wrapper, no build-time asset rebasing. */
+@import "../../public/fonts/diatype.css";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -9,6 +14,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter-display);
   --font-geist: var(--font-geist);
+  --font-diatype: "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-geist-sans);
   --color-sidebar-ring: var(--sidebar-ring);
