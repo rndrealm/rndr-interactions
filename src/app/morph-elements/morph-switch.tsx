@@ -28,7 +28,7 @@ const getNudgeLeft = (t: number) => {
   return `M 65,22 C 74.94,22 83,30.06 83,40 C 83,49.94 74.94,58 65,58 C ${h},58 ${e},49.94 ${e},40 C ${e},30.06 ${h},22 65,22 Z`;
 };
 
-const MorphSwitch = () => {
+const MorphSwitch = ({ morphEnabled = true }: { morphEnabled?: boolean }) => {
   const [checked, setChecked] = useState(false);
   const pathRef = useRef<SVGPathElement>(null);
   const trackRef = useRef<SVGRectElement>(null);
@@ -37,6 +37,7 @@ const MorphSwitch = () => {
   const lastNudgePath = useRef<string | null>(null);
 
   const handleHover = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (!morphEnabled) return;
     if (isAnimating.current || !pathRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
@@ -56,6 +57,7 @@ const MorphSwitch = () => {
   };
 
   const handleHoverEnd = () => {
+    if (!morphEnabled) return;
     if (isAnimating.current || !pathRef.current || !isNudged.current) return;
     isNudged.current = false;
     const restPath = checked ? circleRight : circleLeft;
@@ -66,6 +68,15 @@ const MorphSwitch = () => {
 
   const animateSwitch = async (toChecked: boolean) => {
     if (!pathRef.current || !trackRef.current || isAnimating.current) return;
+
+    if (!morphEnabled) {
+      isAnimating.current = true;
+      animate(trackRef.current, { fill: toChecked ? "#4ade80" : "#e2e8f0" }, { duration: 0.4 });
+      await animate(pathRef.current, { d: toChecked ? circleRight : circleLeft }, { duration: 0.35, ease: [0.4, 0, 0.2, 1] }).finished;
+      isAnimating.current = false;
+      return;
+    }
+
     isAnimating.current = true;
     isNudged.current = false;
 

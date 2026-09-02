@@ -10,8 +10,8 @@ const AudioButton = () => {
     <motion.button
       whileTap={{ scale: 0.9 }}
       onMouseEnter={() => setHoverKey((k) => k + 1)}
-      className="bg-[#F9F9F9] rounded-full cursor-pointer size-8 flex items-center justify-center"
-      style={{ boxShadow: "0px 0px 0px 1px #DBD1D140" }}
+      className="bg-[rgba(249,249,249,0.06)] rounded-full cursor-pointer size-8 flex items-center justify-center"
+      style={{ boxShadow: "0px 0px 0px 1px rgba(255,255,255,0.06)" }}
     >
       <div className="flex items-center gap-0.5">
         {bars.map((bar, i) => {
@@ -20,7 +20,7 @@ const AudioButton = () => {
           return (
             <motion.div
               key={`${i}-${hoverKey}`}
-              className="w-[1.5px] rounded-full bg-black"
+              className="w-[1.5px] rounded-full bg-[rgba(249,249,249,0.5)]"
               initial={{ height: base }}
               animate={{ height: [base, extended, base] }}
               transition={{

@@ -43,10 +43,10 @@ const UploadButton = ({ onUpload }: UploadButtonProps) => {
       <motion.button
         whileTap={{ scale: 0.94 }}
         onClick={() => inputRef.current?.click()}
-        className="bg-[#F9F9F9] rounded-full cursor-pointer size-8 flex items-center justify-center"
-        style={{ boxShadow: "0px 0px 0px 1px #DBD1D140" }}
+        className="bg-[rgba(249,249,249,0.06)] rounded-full cursor-pointer size-8 flex items-center justify-center"
+        style={{ boxShadow: "0px 0px 0px 1px rgba(255,255,255,0.06)" }}
       >
-        <Plus className="size-4" />
+        <Plus className="size-4 text-[rgba(249,249,249,0.5)]" />
       </motion.button>
       <input
         ref={inputRef}

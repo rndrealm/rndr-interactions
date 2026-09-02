@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { SquircleNoScript } from "@squircle-js/react";
 import { Agentation } from "agentation";
 import "./globals.css";
@@ -18,6 +18,11 @@ const interDisplay = localFont({
   ],
   variable: "--font-inter-display",
   display: "swap",
+});
+
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
@@ -38,7 +43,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${interDisplay.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${interDisplay.variable} ${geist.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         {/* Squircle clip-paths are computed client-side; without this the SSR'd
