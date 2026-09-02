@@ -11,15 +11,15 @@ import MdPreview from "./md-preview";
 import { getExt } from "@/lib/helper/ai-input";
 
 const extColors: Record<string, string> = {
-  pdf: "bg-red-100 text-red-600",
-  doc: "bg-blue-100 text-blue-600",
-  docx: "bg-blue-100 text-blue-600",
-  txt: "bg-gray-100 text-gray-600",
-  csv: "bg-green-100 text-green-600",
-  json: "bg-yellow-100 text-yellow-600",
-  xls: "bg-green-100 text-green-600",
-  xlsx: "bg-green-100 text-green-600",
-  md: "bg-purple-100 text-purple-600",
+  pdf: "bg-red-900/30 text-red-400",
+  doc: "bg-blue-900/30 text-blue-400",
+  docx: "bg-blue-900/30 text-blue-400",
+  txt: "bg-[rgba(249,249,249,0.06)] text-[rgba(249,249,249,0.5)]",
+  csv: "bg-green-900/30 text-green-400",
+  json: "bg-yellow-900/30 text-yellow-400",
+  xls: "bg-green-900/30 text-green-400",
+  xlsx: "bg-green-900/30 text-green-400",
+  md: "bg-purple-900/30 text-purple-400",
 };
 
 interface IProps {
@@ -35,7 +35,7 @@ const AssetPreview = ({ assets, onRemove }: IProps) => {
           {assets.map((asset) => {
             const isImage = asset.file.type.startsWith("image/");
             const ext = getExt(asset.file.name);
-            const colorClass = extColors[ext] ?? "bg-gray-100 text-gray-600";
+            const colorClass = extColors[ext] ?? "bg-[rgba(249,249,249,0.06)] text-[rgba(249,249,249,0.5)]";
 
             if (ext === "md") {
               return (
@@ -53,7 +53,7 @@ const AssetPreview = ({ assets, onRemove }: IProps) => {
                   scale: 0.8,
                   transition: { duration: 0.15 },
                 }}
-                className="group relative shrink-0 size-20 rounded-lg overflow-hidden border border-black/5"
+                className="group relative shrink-0 size-20 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.06)]"
               >
                 {isImage ? (
                   <img

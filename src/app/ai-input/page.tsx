@@ -1,243 +1,85 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ModelSwitcher } from "@/components/ai-input/model-switcher";
-import { Tiptap, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { ArrowUp, X } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { cn } from "@/lib/utils";
-import AudioButton from "@/components/ai-input/audio-button";
-import UploadButton, { type Asset } from "@/components/ai-input/upload-button";
-import AssetPreview from "@/components/ai-input/asset-preview";
+import { useChat } from "@ai-sdk/react";
+import ChatInput, { type ChatInputHandle } from "@/components/ai-input/chat-input";
+import MessageList from "@/components/ai-input/message-list";
+import { type ModelId } from "@/components/ai-input/model-switcher";
+import AppLogo from "@/components/ai-input/app-logo";
+import { motion } from "motion/react";
 
 const presetPrompts = [
-  "Write a poem about the ocean",
-  "Explain quantum computing simply",
-  "Plan a weekend trip to Tokyo",
+  "Check my wallet balance",
+  "What tokens do I hold?",
+  "How much ETH do I have?",
 ];
 
-const AiInput = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [loading, setLoading] = useState(false);
+const AiInputPage = () => {
+  const chatInputRef = useRef<ChatInputHandle>(null);
   const [exhausted, setExhausted] = useState(false);
-  const [more, setMore] = useState(false);
-  const [animatingText, setAnimatingText] = useState<string | null>(null);
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [model, setModel] = useState<ModelId>("claude-sonnet-4-6");
 
-  const handleSubmit = () => {
-    if (!editor || loading) return;
-    const text = editor.getText().trim();
-    if (!text) return;
-    if (text.toLocaleLowerCase() === "limit") {
-      setMore(false);
-      setExhausted(true);
-    } else {
-      editor.commands.clearContent();
-      // setLoading(true);
-    }
+  const { messages, sendMessage, status } = useChat();
+
+  const isActive = status === "streaming" || status === "submitted";
+  const lastMessage = messages[messages.length - 1];
+  const assistantHasText =
+    lastMessage?.role === "assistant" &&
+    lastMessage.parts.some((p) => p.type === "text" && p.text);
+  const thinking = isActive && !assistantHasText;
+  const hasMessages = messages.length > 0 || thinking;
+
+  const handleSubmit = (text: string) => {
+    sendMessage({ parts: [{ type: "text", text }] }, { body: { model } });
   };
 
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: "",
-    onFocus: (editor) => {
-      const _text = editor.editor.getText();
-      if (_text) return;
-      setMore(true);
-    },
-    onBlur: () => {
-      setMore(false);
-    },
-    editorProps: {
-      attributes: {
-        class: "text-sm",
-      },
-      handleKeyDown: (_view, event) => {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          handleSubmit();
-          return true;
-        }
-        return false;
-      },
-    },
-  });
+  const inputProps = {
+    onSubmit: handleSubmit,
+    loading: isActive,
+    presetPrompts,
+    model,
+    onModelChange: setModel,
+    exhausted,
+    onExhaustedDismiss: () => setExhausted(false),
+  } as const;
 
-  if (!editor) return null;
+  if (!hasMessages) {
+    return (
+      <main className="w-screen h-screen flex flex-col items-center justify-center px-4 bg-[#1A1A1A]">
+        <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+          <AppLogo className="mb-4" />
+          <p className="text-[rgba(249,249,249,0.5)]  text-lg mb-6">
+            How can I help you Rndr?
+          </p>
+          <ChatInput ref={chatInputRef} {...inputProps} showPresets={false} />
+          <div className="flex flex-wrap gap-2 mt-4 justify-center">
+            {presetPrompts.map((prompt) => (
+              <motion.button
+                key={prompt}
+                whileTap={{ scale: 0.95 }}
+                className="text-xs px-3 py-1.5 rounded-full cursor-pointer bg-[#262626] text-[rgba(249,249,249,0.5)] hover:text-[#f9f9f9] transition-colors"
+                style={{ boxShadow: "0px 0px 0px 1px #333333" }}
+                onClick={() => chatInputRef.current?.insertText(prompt)}
+              >
+                {prompt}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="w-screen h-screen flex items-center justify-center ">
-      <div
-        ref={containerRef}
-        className="w-full max-w-2xl rounded-2xl relative"
-        style={{
-          boxShadow: "0px 0px 0px 1px #DBD1D140",
-        }}
-      >
-        {loading ? (
-          <div
-            className={`nabu-gradient absolute inset-0 rounded-2xl ${loading ? "active" : ""}`}
-          ></div>
-        ) : null}
-
-        <AnimatePresence>
-          {more && assets.length === 0 ? (
-            <motion.div
-              className="absolute bottom-0 left-0 rounded-2xl  w-full bg-[#82A7F1] "
-              initial={{ height: "100%" }}
-              animate={{ height: "calc(100% + 100px)" }}
-              exit={{ height: "100%" }}
-            >
-              <div className="flex flex-col text-xs pt-2.5 px-2.5">
-                {presetPrompts.map((prompt, i) => {
-                  const isLast = i === presetPrompts.length - 1;
-                  return (
-                    <button
-                      key={prompt}
-                      className={cn("cursor-pointer text-left px-2 py-1.5 ", {
-                        "border-b border-b-white/10": !isLast,
-                      })}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setAnimatingText(prompt);
-                        setMore(false);
-                      }}
-                    >
-                      <p className="text-white">{prompt}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-
-        {exhausted ? (
-          <motion.div
-            className="absolute bottom-0 left-0 rounded-2xl  w-full bg-[#82A7F1] "
-            animate={{ height: exhausted ? "calc(100% + 30px)" : "100%" }}
-          >
-            <div className="flex items-center justify-between text-xs text-white pt-2.5 px-2.5">
-              <p className="">10 Credits remaining</p>
-              <div className="flex items-center gap-1.5">
-                <button className="cursor-pointer hover:underline">
-                  <p>Upgrade</p>
-                </button>
-                <button
-                  className="mt-0.5 cursor-pointer"
-                  onClick={() => setExhausted(false)}
-                >
-                  <X className="size-3" strokeWidth={3} />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        ) : null}
-
-        <motion.div
-          className="bg-white relative p-3"
-          animate={{
-            margin:
-              exhausted || (more && assets.length === 0) ? 3 : loading ? 1 : 0,
-            borderRadius:
-              exhausted || (more && assets.length === 0)
-                ? 13
-                : loading
-                  ? 15
-                  : 16,
-          }}
-          transition={{
-            duration: 0.5,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        >
-          <div className="relative">
-            <motion.div
-              animate={{ height: assets.length > 0 ? "auto" : 0 }}
-              transition={
-                assets.length > 0
-                  ? { duration: 0 }
-                  : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
-              }
-              style={{ overflow: "hidden" }}
-            >
-              <AssetPreview
-                assets={assets}
-                onRemove={(id) =>
-                  setAssets((prev) => prev.filter((a) => a.id !== id))
-                }
-              />
-            </motion.div>
-            <div className="pt-2">
-              <Tiptap editor={editor}>
-                <Tiptap.Content
-                  className={cn(
-                    "prose prose-invert outline-none [&_.tiptap]:outline-none [&_.tiptap]:min-h-11 p-1",
-                    animatingText && "invisible",
-                  )}
-                />
-              </Tiptap>
-            </div>
-            <AnimatePresence>
-              {animatingText && (
-                <motion.p
-                  className="absolute inset-0 p-1 pt-3 text-sm"
-                  initial="hidden"
-                  animate="visible"
-                  variants={{
-                    visible: {
-                      transition: { staggerChildren: 0.02 },
-                    },
-                  }}
-                  onAnimationComplete={() => {
-                    editor?.commands.setContent(`<p>${animatingText}</p>`);
-                    setAnimatingText(null);
-                  }}
-                >
-                  {animatingText.split("").map((char, i) => (
-                    <motion.span
-                      key={i}
-                      variants={{
-                        hidden: { opacity: 0, y: 6 },
-                        visible: { opacity: 1, y: 0 },
-                      }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                    >
-                      {char}
-                    </motion.span>
-                  ))}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="flex items-center justify-between mt-4 relative">
-            <UploadButton
-              onUpload={(newAssets) =>
-                setAssets((prev) => [...prev, ...newAssets])
-              }
-            />
-            <div className="flex items-center gap-2.5">
-              <div>
-                <ModelSwitcher />
-              </div>
-              <AudioButton />
-
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleSubmit}
-                className="bg-[#F9F9F9] rounded-full cursor-pointer size-8 flex items-center justify-center"
-                style={{ boxShadow: "0px 0px 0px 1px #DBD1D140" }}
-              >
-                <ArrowUp className="size-4" />
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
+    <main className="w-screen h-screen flex flex-col items-center bg-[#1A1A1A]">
+      <div className="flex-1 overflow-y-auto w-full flex flex-col items-center pt-8 pb-4">
+        <MessageList messages={messages} loading={thinking} />
+      </div>
+      <div className="w-full flex justify-center pb-6 px-4">
+        <ChatInput {...inputProps} showPresets={false} />
       </div>
     </main>
   );
 };
 
-export default AiInput;
+export default AiInputPage;
