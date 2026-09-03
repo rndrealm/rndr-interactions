@@ -50,6 +50,7 @@ const nextConfig: NextConfig = {
     return config;
   },
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
+  allowedDevOrigins: ["192.168.100.3"],
 };
 
 export default nextConfig;
