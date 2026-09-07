@@ -18,7 +18,6 @@ const navButtonOptions = [
   { id: 4, label: "Terminal" },
   { id: 5, label: "Pricing" },
   { id: 6, label: "Learn" },
-  { id: 7, label: "Support" },
 ];
 
 interface INavButton {
@@ -62,8 +61,10 @@ function NavButton(props: INavButton) {
         onToggle();
       }}
       aria-expanded={hasMenu ? isActive : undefined}
-      className={`h-8 px-4 font-diatype font-medium text-sm leading-5 ${t.navButtonText} tracking-[-0.56%] cursor-pointer rounded-[16px] ${
-        isActive ? t.navButtonActive : t.navButtonHover
+      className={`h-7 px-2 font-sans font-medium text-[13px] leading-5 tracking-[-0.56%] cursor-pointer rounded-[6px] transition-colors duration-150 ${
+        isActive
+          ? t.navButtonActive
+          : `${t.navButtonText} ${t.navButtonHover}`
       }`}
     >
       {label}
@@ -82,7 +83,7 @@ export function NavArea(props: INavArea) {
 
   return (
     <div
-      className="flex gap-2.25 items-center relative"
+      className="flex gap-1 items-center relative"
       onPointerLeave={(e) => {
         if (e.pointerType !== "mouse") return;
         setNavState(null);
