@@ -2,6 +2,7 @@
 import React from "react";
 import { MenuGroup } from "./menu-group";
 import { NavState } from "@/app/fomoed-nav/page";
+import { navTheme, type Theme } from "./theme";
 
 const offersData = [
   { id: 1, title: "Trading Terminal", description: "Powerful, Agile trading" },
@@ -39,28 +40,34 @@ export type IMenuData = (typeof offersData)[0];
 
 interface IProps {
   state: NavState;
+  theme?: Theme;
 }
 
 export function MenuContent(props: IProps) {
-  const { state } = props;
+  const { state, theme = "dark" } = props;
 
   const stateKey = state || "offer";
+  const t = navTheme[theme];
 
   return (
-    <div className="relative h-77.5 overflow-hidden rounded-[20px] bg-[#101010] shadow-[0px_0px_0px_1px_#1B1B1B] flex gap-0">
+    <div
+      className={`relative h-77.5 overflow-hidden rounded-[20px] ${t.panel} flex gap-0`}
+    >
       <MenuGroup
         title={stateKey === "prediction" ? "PREDICTIONS" : "OFFERS"}
         data={stateKey === "prediction" ? predictionsData : offersData}
+        theme={theme}
       />
 
       <MenuGroup
         title="USE CASES"
         data={useCasesData}
         isVisible={stateKey === "offer"}
+        theme={theme}
       />
 
       <div className="w-60 h-full py-3 mr-3">
-        <div className="w-full h-full bg-[#1D1D1D] rounded-[8px]"></div>
+        <div className={`w-full h-full ${t.promo} rounded-[8px]`}></div>
       </div>
     </div>
   );

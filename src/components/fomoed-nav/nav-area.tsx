@@ -1,6 +1,7 @@
 "use client";
 import React, { useRef, useState } from "react";
 import { MenuContent } from "./menu-content";
+import { navTheme, type Theme } from "./theme";
 
 export type NavState = "offer" | "prediction" | null;
 
@@ -27,10 +28,13 @@ interface INavButton {
   activeState: NavState;
   onOpen: () => void;
   onToggle: () => void;
+  theme: Theme;
 }
 
 function NavButton(props: INavButton) {
-  const { label, menuState, activeState, onOpen, onToggle } = props;
+  const { label, menuState, activeState, onOpen, onToggle, theme } = props;
+
+  const t = navTheme[theme];
 
   const pointerType = useRef("mouse");
 
@@ -58,8 +62,8 @@ function NavButton(props: INavButton) {
         onToggle();
       }}
       aria-expanded={hasMenu ? isActive : undefined}
-      className={`h-8 px-4 font-diatype font-medium text-sm leading-5 text-[#E6E6E6] tracking-[-0.56%] cursor-pointer rounded-[16px] ${
-        isActive ? "bg-[#131313]" : "hover:bg-[#131313]"
+      className={`h-8 px-4 font-diatype font-medium text-sm leading-5 ${t.navButtonText} tracking-[-0.56%] cursor-pointer rounded-[16px] ${
+        isActive ? t.navButtonActive : t.navButtonHover
       }`}
     >
       {label}
@@ -67,7 +71,13 @@ function NavButton(props: INavButton) {
   );
 }
 
-export function NavArea() {
+interface INavArea {
+  theme?: Theme;
+}
+
+export function NavArea(props: INavArea) {
+  const { theme = "dark" } = props;
+
   const [navState, setNavState] = useState<NavState>(null);
 
   return (
@@ -92,6 +102,7 @@ export function NavArea() {
                 current === menuState ? null : menuState,
               )
             }
+            theme={theme}
           />
         );
       })}
@@ -101,7 +112,7 @@ export function NavArea() {
           navState ? "flex" : "hidden"
         }`}
       >
-        {navState && <MenuContent state={navState} />}
+        {navState && <MenuContent state={navState} theme={theme} />}
       </div>
     </div>
   );
