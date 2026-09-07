@@ -1,6 +1,5 @@
 import React from "react";
 import { TextMorph } from "torph/react";
-import { CaretRight } from "../icons";
 import { navTheme, type Theme } from "./theme";
 
 interface IProps {
@@ -26,28 +25,25 @@ export function MenuContentItem(props: IProps) {
   return (
     <div
       // type="button"
-      className={`p-2 flex items-center justify-between rounded-[8px] text-left cursor-pointer ${t.itemHover}`}
+      className={`group p-2 flex items-center rounded-[8px] text-left cursor-pointer ${t.itemHover}`}
     >
       <div className="flex items-center gap-2 flex-1">
         <div className={`w-8 h-8 rounded-[6px] ${t.itemThumb}`}></div>
         <div className="flex flex-col gap-1 flex-1">
           <div className="h-4 relative">
             <p
-              className={`${t.itemTitle} text-[13px] leading-4 tracking-[-0.56%] font-diatype flex-1 absolute top-0 left-0`}
+              className={`${t.itemTitle} text-[13px] leading-4 tracking-[-0.56%] font-sans transition-colors duration-150 flex-1 absolute top-0 left-0`}
             >
               <TextMorph {...MORPH}>{title}</TextMorph>
             </p>
           </div>
 
           <p
-            className={`${t.itemDescription} text-[11px] leading-3 tracking-[-0.56%] font-diatype flex-1`}
+            className={`${t.itemDescription} text-[11px] leading-3 tracking-[-0.56%] font-sans flex-1`}
           >
             <TextMorph {...MORPH}>{description}</TextMorph>
           </p>
         </div>
-      </div>
-      <div className="w-2.5 h-2.5 flex items-center justify-center">
-        <CaretRight color={t.caret} />
       </div>
     </div>
   );

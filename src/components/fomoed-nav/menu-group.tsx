@@ -50,7 +50,7 @@ export function MenuGroup(props: IProps) {
           <div className="h-7 flex items-center px-2">
             <TextMorph
               as="p"
-              className={`${t.groupTitle} text-[11px] leading-3 tracking-[-0.56%] font-medium font-diatype`}
+              className={`${t.groupTitle} text-[11px] leading-3 tracking-[-0.56%] font-medium font-sans`}
               scale={false}
               duration={320}
             >
