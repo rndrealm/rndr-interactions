@@ -3,18 +3,22 @@ import { animate, motion, useMotionValue, useTransform } from "motion/react";
 import { MenuContentItem } from "./menu-content-item";
 import { IMenuData } from "./menu-content";
 import { TextMorph } from "torph/react";
+import { navTheme, type Theme } from "./theme";
 
 interface IProps {
   data: IMenuData[];
   title: string;
   isVisible?: boolean;
+  theme?: Theme;
 }
 
 const EXPANDED_WIDTH = 284;
 const SPRING = { type: "spring", visualDuration: 0.32, bounce: 0 } as const;
 
 export function MenuGroup(props: IProps) {
-  const { data, title, isVisible = true } = props;
+  const { data, title, isVisible = true, theme = "dark" } = props;
+
+  const t = navTheme[theme];
 
   const raw = useMotionValue(isVisible ? EXPANDED_WIDTH : 0);
 
@@ -39,12 +43,14 @@ export function MenuGroup(props: IProps) {
       className="shrink-0 overflow-hidden"
       style={{ width, opacity, pointerEvents: isVisible ? "auto" : "none" }}
     >
-      <div className="w-69 shrink-0 pt-3 pb-3.5 pl-3 pr-2 mr-2 flex flex-col border-r border-[#1A1A1A]">
+      <div
+        className={`w-69 shrink-0 pt-3 pb-3.5 pl-3 pr-2 mr-2 flex flex-col border-r ${t.groupBorder}`}
+      >
         <div className="w-63.75 flex flex-col">
           <div className="h-7 flex items-center px-2">
             <TextMorph
               as="p"
-              className="text-[#6C6C6C] text-[11px] leading-3 tracking-[-0.56%] font-medium font-diatype"
+              className={`${t.groupTitle} text-[11px] leading-3 tracking-[-0.56%] font-medium font-diatype`}
               scale={false}
               duration={320}
             >
@@ -60,6 +66,7 @@ export function MenuGroup(props: IProps) {
                 key={index}
                 title={item.title}
                 description={item.description}
+                theme={theme}
               />
             ))}
           </div>
