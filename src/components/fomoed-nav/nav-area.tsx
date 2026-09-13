@@ -30,17 +30,25 @@ interface INavButton {
   theme: Theme;
 }
 
+/**
+ * Hover-to-open on a mouse, tap-to-toggle on touch and pen.
+ *
+ * It all hangs off `pointerType`, which pointer events carry and mouse events
+ * don't: browsers synthesise `mouseenter` after a tap, so `onMouseEnter` can't
+ * tell a finger from a cursor. Hover is therefore gated to mouse, and touch/pen
+ * fall through to `onClick`, which toggles. `onFocus` needs the
+ * `:focus-visible` gate because a tap fires focus *before* click — ungated, it
+ * opens the menu and the toggle then reads its own write and closes it again.
+ */
 function NavButton(props: INavButton) {
   const { label, menuState, activeState, onOpen, onToggle, theme } = props;
 
   const t = navTheme[theme];
 
-  const pointerType = useRef("mouse");
-
   const hasMenu = menuState !== null;
-  // Hold the hover look while this button's menu is open, so it stays lit
-  // once the cursor moves down into the panel.
   const isActive = hasMenu && menuState === activeState;
+
+  const pointerType = useRef("mouse");
 
   return (
     <button
@@ -49,22 +57,17 @@ function NavButton(props: INavButton) {
         pointerType.current = e.pointerType;
       }}
       onPointerEnter={(e) => {
-        if (e.pointerType !== "mouse") return;
-        onOpen();
+        if (e.pointerType === "mouse") onOpen();
       }}
       onFocus={(e) => {
-        if (!e.target.matches(":focus-visible")) return;
-        onOpen();
+        if (e.target.matches(":focus-visible")) onOpen();
       }}
       onClick={() => {
-        if (pointerType.current === "mouse") return;
-        onToggle();
+        if (pointerType.current !== "mouse") onToggle();
       }}
       aria-expanded={hasMenu ? isActive : undefined}
       className={`h-7 px-2 font-sans font-medium text-[13px] leading-5 tracking-[-0.56%] cursor-pointer rounded-[6px] transition-colors duration-150 ${
-        isActive
-          ? t.navButtonActive
-          : `${t.navButtonText} ${t.navButtonHover}`
+        isActive ? t.navButtonActive : `${t.navButtonText} ${t.navButtonHover}`
       }`}
     >
       {label}
@@ -84,6 +87,8 @@ export function NavArea(props: INavArea) {
   return (
     <div
       className="flex gap-1 items-center relative"
+      // Mouse only: one tap fires enter -> down -> up -> leave in a single
+      // gesture, so an ungated leave would close what the tap just opened.
       onPointerLeave={(e) => {
         if (e.pointerType !== "mouse") return;
         setNavState(null);
