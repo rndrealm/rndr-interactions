@@ -27,7 +27,7 @@ export function Webgl(props: IProps) {
         zIndex: 99,
       }}
     >
-      {/* <Stats /> */}
+      <Stats />
       <Experience api={api} mode={mode} />
     </Canvas>
   );
