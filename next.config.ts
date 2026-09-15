@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "image.tmdb.org",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.cosmos.so",
+      },
     ],
   },
   turbopack: {
@@ -50,7 +54,9 @@ const nextConfig: NextConfig = {
     return config;
   },
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
-  allowedDevOrigins: ["192.168.100.3"],
+  // Wildcard rather than a literal IP: DHCP reassigns the LAN address and a
+  // stale entry silently blocks the dev client bundle on phones.
+  allowedDevOrigins: ["192.168.100.*"],
 };
 
 export default nextConfig;
