@@ -523,13 +523,10 @@ interface IEdgeBlur {
 // edge and stepped down one cutoff at a time, which is what banded.
 function EdgeBlur(props: IEdgeBlur) {
   const { edge } = props;
-  // the ramp always runs from the edge inward, so it flips with the edge
   const towards = edge === "top" ? "bottom" : "top";
-  // the ramp is measured from the panel's edge, not the container's, so the
-  // bleed has to be discounted before the segments are laid out
   const total = EDGE_BLUR_HEIGHT + EDGE_BLUR_BLEED;
-  const start = (EDGE_BLUR_BLEED / total) * 100;
-  const seg = (100 - start) / EDGE_BLUR_LAYERS;
+  const blur = `blur(${EDGE_BLUR_MAX}px)`;
+  const mask = `linear-gradient(to ${towards}, #000 0, transparent ${total}px)`;
   return (
     <div
       className="absolute inset-x-0 pointer-events-none"
@@ -540,37 +537,15 @@ function EdgeBlur(props: IEdgeBlur) {
           : { bottom: -EDGE_BLUR_BLEED }),
       }}
     >
-      {Array.from({ length: EDGE_BLUR_LAYERS }).map((_, k) => {
-        // k counts inward from the edge, and the radius falls with it. the
-        // curve lands on ~0 at the inner end, so there is no step where the
-        // blur stops — it simply runs out
-        const t = k / EDGE_BLUR_LAYERS;
-        const radius = EDGE_BLUR_MAX * (1 - t) ** EDGE_BLUR_FALLOFF;
-        const blur = `blur(${radius.toFixed(2)}px)`;
-        const at = (n: number) =>
-          Math.max(0, Math.min(100, start + n * seg));
-        // the layer on the edge carries all the way out through the bleed, so
-        // the blur is already at full strength by the time it reaches the panel
-        const lead = k === 0 ? 1 : 0;
-        const mask =
-          `linear-gradient(to ${towards},` +
-          ` rgba(0,0,0,${lead}) ${k === 0 ? 0 : at(k - 1)}%,` +
-          ` rgba(0,0,0,1) ${at(k)}%,` +
-          ` rgba(0,0,0,1) ${at(k + 1)}%,` +
-          ` rgba(0,0,0,0) ${at(k + 2)}%)`;
-        return (
-          <div
-            key={k}
-            className="absolute inset-0"
-            style={{
-              backdropFilter: blur,
-              WebkitBackdropFilter: blur,
-              maskImage: mask,
-              WebkitMaskImage: mask,
-            }}
-          />
-        );
-      })}
+      <div
+        className="absolute inset-0"
+        style={{
+          backdropFilter: blur,
+          WebkitBackdropFilter: blur,
+          maskImage: mask,
+          WebkitMaskImage: mask,
+        }}
+      />
     </div>
   );
 }

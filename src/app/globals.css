@@ -46,6 +46,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-background-recessed: var(--background-recessed);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -56,6 +58,8 @@
 }
 
 :root {
+  --surface-elevated: oklch(0.922 0 0);
+  --background-recessed: oklch(0.97 0 0);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -91,6 +95,8 @@
 }
 
 .dark {
+  --surface-elevated: oklch(1 0 0 / 8%);
+  --background-recessed: oklch(1 0 0 / 4%);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -240,4 +246,29 @@ body {
   color: #82A7F1;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.mention {
+  background: oklch(from var(--primary) l c h / 15%);
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-weight: 500;
+}
+
+.nabu-gradient {
+  background: conic-gradient(from 0deg, #6366f1, #a855f7, #ec4899, #f59e0b, #6366f1);
+  background-size: 200% 200%;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  filter: blur(8px);
+}
+
+.nabu-gradient.active {
+  opacity: 0.5;
+  animation: nabu-spin 3s linear infinite;
+}
+
+@keyframes nabu-spin {
+  from { rotate: 0deg; }
+  to { rotate: 360deg; }
 }
