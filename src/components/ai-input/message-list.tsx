@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentProps, useEffect, useRef } from "react";
+import { type ComponentProps, useLayoutEffect, useRef } from "react";
 import { type UIMessage } from "ai";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -16,22 +16,56 @@ interface MessageListProps {
   loading?: boolean;
 }
 
-
 export default function MessageList({ messages, loading = false }: MessageListProps) {
+  const listRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastUserRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const lastScrolledId = useRef<string | null>(null);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  useLayoutEffect(() => {
+    const scrollContainer = listRef.current?.parentElement;
+    if (!scrollContainer || !lastUserRef.current || !bottomRef.current || !spacerRef.current) return;
+
+    const viewportHeight = scrollContainer.clientHeight;
+    const scrollStyles = getComputedStyle(scrollContainer);
+    const paddingBottom = parseFloat(scrollStyles.paddingBottom) || 0;
+    const scrollPaddingTop = parseFloat(scrollStyles.scrollPaddingTop) || 0;
+    const gap = parseFloat(getComputedStyle(listRef.current!).gap) || 0;
+
+    const contentAfterUser = bottomRef.current.offsetTop - lastUserRef.current.offsetTop;
+    const spacer = Math.max(0, viewportHeight - scrollPaddingTop - contentAfterUser - gap - paddingBottom);
+
+    spacerRef.current.style.minHeight = `${spacer}px`;
+
+    const lastUserMsg = messages.findLast(m => m.role === "user");
+    const isNewMessage = lastUserMsg && lastUserMsg.id !== lastScrolledId.current;
+
+    if (spacer > 0 && isNewMessage) {
+      lastUserRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      lastScrolledId.current = lastUserMsg.id;
+    } else if (spacer === 0) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      lastScrolledId.current = null;
+      listRef.current!.style.minHeight = "";
+    }
+
+    if (lastScrolledId.current) {
+      listRef.current!.style.minHeight = `${listRef.current!.scrollHeight}px`;
+    }
   }, [messages, loading]);
 
   if (messages.length === 0 && !loading) return null;
 
+  const lastUserIndex = messages.findLastIndex((m) => m.role === "user");
+
   return (
-    <div className="flex flex-col gap-4 w-full max-w-2xl px-2">
+    <div ref={listRef} className="flex flex-col gap-4 w-full max-w-2xl px-2">
       <AnimatePresence initial={false}>
-        {messages.map((message) => (
+        {messages.map((message, index) => (
           <motion.div
             key={message.id}
+            ref={index === lastUserIndex ? lastUserRef : undefined}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
@@ -101,6 +135,7 @@ export default function MessageList({ messages, loading = false }: MessageListPr
         )}
       </AnimatePresence>
       <div ref={bottomRef} />
+      <div ref={spacerRef} className="shrink-0" />
     </div>
   );
 }

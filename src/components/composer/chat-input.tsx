@@ -1,24 +1,36 @@
 "use client";
 
-import { useRef, useState, forwardRef, useImperativeHandle } from "react";
+import {
+  useRef,
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import {
   ModelSwitcher,
   type ModelId,
-} from "@/components/ai-input/model-switcher";
+} from "@/components/composer/model-switcher";
 import { Tiptap, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Mention from "@tiptap/extension-mention";
+import { documentSuggestion } from "@/components/composer/document-suggestion";
 import { ArrowUp, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
-import AudioButton from "@/components/ai-input/audio-button";
-import UploadButton, { type Asset } from "@/components/ai-input/upload-button";
-import AssetPreview from "@/components/ai-input/asset-preview";
+import AudioButton from "@/components/composer/audio-button";
+import UploadButton, { type Asset } from "@/components/composer/upload-button";
+import AssetPreview from "@/components/composer/asset-preview";
+import { useComposerStore } from "@/providers/composer-store-provider";
+
+export interface MentionedDoc {
+  id: string;
+  label: string;
+}
 
 interface ChatInputProps {
-  onSubmit: (text: string, assets: Asset[]) => void;
+  onSubmit: (text: string, assets: Asset[], mentions: MentionedDoc[]) => void;
   loading?: boolean;
-  presetPrompts?: string[];
-  showPresets?: boolean;
   model: ModelId;
   onModelChange: (model: ModelId) => void;
   exhausted?: boolean;
@@ -30,13 +42,13 @@ export interface ChatInputHandle {
   insertText: (text: string) => void;
 }
 
+const STORE_KEY = "composer-default";
+
 const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
   function ChatInput(
     {
       onSubmit,
       loading = false,
-      presetPrompts = [],
-      showPresets: showPresetsProp = true,
       model,
       onModelChange,
       exhausted = false,
@@ -47,27 +59,35 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const submitRef = useRef<() => void>(() => {});
-    const [more, setMore] = useState(false);
+    const [hovering, setHovering] = useState(false);
     const [animatingText, setAnimatingText] = useState<string | null>(null);
-    const [assets, setAssets] = useState<Asset[]>([]);
+
+    const { save, load, pendingContext, consumePendingContext } =
+      useComposerStore();
+    const initialHtml = useRef(load(STORE_KEY)?.html || "");
+    const [assets, setAssets] = useState<Asset[]>(
+      () => load(STORE_KEY)?.assets || [],
+    );
+
+    const assetsRef = useRef(assets);
+    assetsRef.current = assets;
 
     const editor = useEditor({
-      extensions: [StarterKit],
-      content: "",
-      onFocus: (editor) => {
-        const _text = editor.editor.getText();
-        if (_text) return;
-        setMore(true);
-      },
-      onBlur: () => {
-        setMore(false);
-      },
+      extensions: [
+        StarterKit,
+        Mention.configure({
+          HTMLAttributes: { class: "mention" },
+          suggestion: documentSuggestion,
+        }),
+      ],
+      content: initialHtml.current,
       editorProps: {
         attributes: {
           class: "text-sm",
         },
-        handleKeyDown: (_view, event) => {
+        handleKeyDown: (view, event) => {
           if (event.key === "Enter" && !event.shiftKey) {
+            if (view.dom.querySelector(".suggestion")) return false;
             event.preventDefault();
             submitRef.current();
             return true;
@@ -77,16 +97,71 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       },
     });
 
+    useEffect(() => {
+      return () => {
+        try {
+          if (editor && !editor.isDestroyed) {
+            save(STORE_KEY, {
+              html: editor.getHTML(),
+              assets: assetsRef.current,
+            });
+          }
+        } catch {
+          // Editor may already be destroyed by Tiptap's own cleanup
+        }
+      };
+    }, [editor, save]);
+
     const handleSubmit = () => {
       if (!editor || loading) return;
       const text = editor.getText().trim();
       if (!text) return;
+
+      const mentions: MentionedDoc[] = [];
+      const walk = (node: Record<string, unknown>) => {
+        if (node.type === "mention" && node.attrs) {
+          const attrs = node.attrs as { id: string; label: string };
+          mentions.push({ id: attrs.id, label: attrs.label });
+        }
+        (node.content as Record<string, unknown>[] | undefined)?.forEach(walk);
+      };
+      (
+        editor.getJSON().content as Record<string, unknown>[] | undefined
+      )?.forEach(walk);
+
       editor.commands.clearContent();
-      onSubmit(text, assets);
+      onSubmit(text, assets, mentions);
       setAssets([]);
     };
 
     submitRef.current = handleSubmit;
+
+    const showGhost = hovering && !!pendingContext;
+
+    const handleDrop = () => {
+      const ctx = consumePendingContext();
+      if (!ctx) return;
+      if (ctx.imageUrl) {
+        const file = new File([], ctx.fileName, { type: "image/png" });
+        setAssets((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            file,
+            preview: ctx.imageUrl!,
+            content: ctx.content,
+          },
+        ]);
+      } else {
+        const file = new File([ctx.content], ctx.fileName, {
+          type: "text/markdown",
+        });
+        setAssets((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), file, preview: "", content: ctx.content },
+        ]);
+      }
+    };
 
     useImperativeHandle(ref, () => ({
       insertText: (text: string) => {
@@ -94,22 +169,52 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       },
     }));
 
-    if (!editor) return null;
+    if (!editor) {
+      return (
+        <div
+          className="w-full max-w-2xl rounded-[16px] relative"
+          style={{ boxShadow: "0px 0px 0px 1px var(--surface-elevated)" }}
+        >
+          <div
+            className={cn(
+              "bg-card relative rounded-[16px]",
+              compact ? "px-3 py-2" : "p-3",
+            )}
+          >
+            <div className={cn("relative", compact ? "pt-1" : "pt-2")}>
+              <div className={cn("p-1", compact ? "min-h-8" : "min-h-11")} />
+            </div>
+            <div
+              className={cn(
+                "flex items-center justify-between relative",
+                compact ? "mt-1.5" : "mt-4",
+              )}
+            >
+              <div className="size-8" />
+              <div className="flex items-center gap-2.5">
+                <div className="size-8" />
+                <div className="size-8" />
+                <div className="bg-primary rounded-full size-8" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-    const showPresets =
-      showPresetsProp &&
-      more &&
-      assets.length === 0 &&
-      presetPrompts.length > 0;
-    const expanded = exhausted || showPresets;
+    const expanded = exhausted;
 
     return (
       <div
         ref={containerRef}
-        className="w-full max-w-2xl rounded-[16px] relative "
+        className="w-full max-w-2xl rounded-[16px] relative"
         style={{
-          boxShadow: "0px 0px 0px 1px #333333",
+          boxShadow: "0px 0px 0px 1px var(--surface-elevated)",
         }}
+        data-composer
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+        onClick={showGhost ? handleDrop : undefined}
       >
         {loading ? (
           <div
@@ -117,46 +222,12 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
           ></div>
         ) : null}
 
-        <AnimatePresence>
-          {showPresets ? (
-            <motion.div
-              className="absolute bottom-0 left-0 rounded-2xl w-full bg-[#1a1a1a]"
-              initial={{ height: "100%" }}
-              animate={{ height: "calc(100% + 100px)" }}
-              exit={{ height: "100%" }}
-            >
-              <div className="flex flex-col text-xs pt-2.5 px-2.5">
-                {presetPrompts.map((prompt, i) => {
-                  const isLast = i === presetPrompts.length - 1;
-                  return (
-                    <button
-                      key={prompt}
-                      className={cn("cursor-pointer text-left px-2 py-1.5", {
-                        "border-b border-b-white/5": !isLast,
-                      })}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setAnimatingText(prompt);
-                        setMore(false);
-                      }}
-                    >
-                      <p className="text-[rgba(249,249,249,0.5)] hover:text-[#f9f9f9] transition-colors">
-                        {prompt}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-
         {exhausted ? (
           <motion.div
-            className="absolute bottom-0 left-0 rounded-2xl w-full bg-[#1a1a1a]"
+            className="absolute bottom-0 left-0 rounded-2xl w-full bg-background"
             animate={{ height: exhausted ? "calc(100% + 30px)" : "100%" }}
           >
-            <div className="flex items-center justify-between text-xs text-[rgba(249,249,249,0.5)] pt-2.5 px-2.5">
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2.5 px-2.5">
               <p>10 Credits remaining</p>
               <div className="flex items-center gap-1.5">
                 <button className="cursor-pointer hover:underline">
@@ -174,7 +245,7 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
         ) : null}
 
         <motion.div
-          className={cn("bg-[#262626] relative", compact ? "px-3 py-2" : "p-3")}
+          className={cn("bg-card relative", compact ? "px-3 py-2" : "p-3")}
           animate={{
             margin: expanded ? 3 : loading ? 1 : 0,
             borderRadius: expanded ? 13 : loading ? 15 : 16,
@@ -186,9 +257,9 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
         >
           <div className="relative">
             <motion.div
-              animate={{ height: assets.length > 0 ? "auto" : 0 }}
+              animate={{ height: assets.length > 0 || showGhost ? "auto" : 0 }}
               transition={
-                assets.length > 0
+                assets.length > 0 || showGhost
                   ? { duration: 0 }
                   : { duration: 0.35, ease: [0.16, 1, 0.3, 1] }
               }
@@ -196,6 +267,7 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             >
               <AssetPreview
                 assets={assets}
+                ghostAsset={showGhost ? pendingContext : null}
                 onRemove={(id) =>
                   setAssets((prev) => prev.filter((a) => a.id !== id))
                 }
@@ -205,7 +277,7 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               <Tiptap editor={editor}>
                 <Tiptap.Content
                   className={cn(
-                    "prose prose-invert outline-none [&_.tiptap]:outline-none [&_.tiptap]:text-[#f9f9f9] p-1",
+                    "prose prose-invert outline-none [&_.tiptap]:outline-none [&_.tiptap]:text-foreground p-1",
                     compact ? "[&_.tiptap]:min-h-8" : "[&_.tiptap]:min-h-11",
                     animatingText && "invisible",
                   )}
@@ -214,7 +286,7 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               <AnimatePresence>
                 {animatingText && (
                   <motion.p
-                    className="absolute inset-0 p-1 pt-3 text-sm text-[#f9f9f9]"
+                    className="absolute inset-0 p-1 pt-3 text-sm text-foreground"
                     initial="hidden"
                     animate="visible"
                     variants={{
@@ -266,7 +338,7 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={handleSubmit}
-                className="bg-[#5A7FD4] rounded-full cursor-pointer size-8 flex items-center justify-center"
+                className="bg-primary rounded-full cursor-pointer size-8 flex items-center justify-center"
               >
                 <ArrowUp className="size-4 text-white" />
               </motion.button>
