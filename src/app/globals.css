@@ -13,6 +13,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter-display);
+  --font-inter: var(--font-inter-sans), ui-sans-serif, system-ui, sans-serif;
   --font-geist: var(--font-geist);
   --font-diatype: "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
@@ -48,6 +49,17 @@
   --color-card: var(--card);
   --color-surface-elevated: var(--surface-elevated);
   --color-background-recessed: var(--background-recessed);
+  --color-grey-page: var(--grey-page);
+  --color-grey-component: var(--grey-component);
+  --color-grey-component-hover: var(--grey-component-hover);
+  --color-grey-border: var(--grey-border);
+  --color-grey-solid: var(--grey-solid);
+  --color-grey-body-text: var(--grey-body-text);
+  --color-grey-heading-text: var(--grey-heading-text);
+  --color-stroke-hairline: var(--stroke-hairline);
+  --color-stroke-subtle: var(--stroke-subtle);
+  --shadow-raised: var(--elevation-raised);
+  --shadow-overlay: var(--elevation-overlay);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -60,6 +72,21 @@
 :root {
   --surface-elevated: oklch(0.922 0 0);
   --background-recessed: oklch(0.97 0 0);
+  /* Grey ramp — one step per purpose, no steps that nothing uses.
+     Light and dark are authored separately rather than inverted. */
+  --grey-page: oklch(1 0 0); /* #ffffff — page background */
+  --grey-component: oklch(0.9612 0 0); /* #f2f2f2 — component background */
+  --grey-component-hover: oklch(0.936 0 0); /* #eaeaea — component hover */
+  --grey-border: oklch(0.922 0 0); /* #e5e5e5 — border */
+  --grey-solid: oklch(0.75 0 0); /* #aeaeae — solid fill */
+  --grey-body-text: oklch(0.556 0 0); /* #737373 — body text */
+  --grey-heading-text: oklch(0.235 0 0); /* #1e1e1e — headings; softer than --foreground (#0a0a0a) */
+  --stroke-hairline: oklch(0 0 0 / 8%); /* 1px edge on imagery */
+  --stroke-subtle: var(--grey-border); /* 1px ring around components */
+  --elevation-raised: 0px 0px 0px 1px oklch(0 0 0 / 5%),
+    0px 1px 2.5px 0px oklch(0 0 0 / 8%);
+  --elevation-overlay: 0px 0px 0px 1px oklch(0 0 0 / 5%),
+    0px 4px 12px -2px oklch(0 0 0 / 12%);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -97,6 +124,19 @@
 .dark {
   --surface-elevated: oklch(1 0 0 / 8%);
   --background-recessed: oklch(1 0 0 / 4%);
+  --grey-page: oklch(0.145 0 0);
+  --grey-component: oklch(1 0 0 / 6%);
+  --grey-component-hover: oklch(1 0 0 / 10%);
+  --grey-border: oklch(1 0 0 / 14%);
+  --grey-solid: oklch(0.55 0 0);
+  --grey-body-text: oklch(0.708 0 0);
+  --grey-heading-text: oklch(0.9 0 0);
+  --stroke-hairline: oklch(1 0 0 / 8%);
+  --stroke-subtle: var(--grey-border);
+  --elevation-raised: 0px 0px 0px 1px oklch(from var(--foreground) l c h / 4%),
+    0px 1px 2.5px 0px oklch(0 0 0 / 30%);
+  --elevation-overlay: 0px 0px 0px 1px oklch(from var(--foreground) l c h / 4%),
+    0px 8px 24px -4px oklch(0 0 0 / 50%);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -271,4 +311,113 @@ body {
 @keyframes nabu-spin {
   from { rotate: 0deg; }
   to { rotate: 360deg; }
+}
+
+/* Glass surfaces for the @-mention rows.
+   Refraction comes from an SVG displacement map applied to the backdrop; the
+   first backdrop-filter is the fallback for engines that drop url() values.
+   The specular insets are what actually read as glass over a pale page. */
+.glass {
+  background: oklch(from var(--grey-page) l c h / 55%);
+  /* Refraction is applied inline in the component: the CSS build strips
+     url() out of backdrop-filter, so this is the blur-only fallback. */
+  backdrop-filter: blur(4px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 75%),
+    inset 0 -1px 0 oklch(1 0 0 / 30%),
+    inset 0 0 0 1px oklch(from var(--foreground) l c h / 7%),
+    0 1px 2px oklch(0 0 0 / 5%),
+    0 8px 20px -8px oklch(0 0 0 / 14%);
+  transition:
+    background-color 150ms ease-out,
+    box-shadow 150ms ease-out;
+}
+
+.glass-active {
+  background: oklch(from var(--grey-page) l c h / 82%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 90%),
+    inset 0 -1px 0 oklch(1 0 0 / 40%),
+    inset 0 0 0 1px oklch(from var(--foreground) l c h / 10%),
+    0 1px 2px oklch(0 0 0 / 7%),
+    0 10px 24px -8px oklch(0 0 0 / 20%);
+}
+
+.dark .glass {
+  background: oklch(from var(--grey-page) l c h / 45%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 14%),
+    inset 0 -1px 0 oklch(1 0 0 / 5%),
+    inset 0 0 0 1px oklch(1 0 0 / 10%),
+    0 1px 2px oklch(0 0 0 / 40%),
+    0 8px 20px -8px oklch(0 0 0 / 55%);
+}
+
+.dark .glass-active {
+  background: oklch(from var(--grey-page) l c h / 65%);
+  box-shadow:
+    inset 0 1px 0 oklch(1 0 0 / 22%),
+    inset 0 -1px 0 oklch(1 0 0 / 8%),
+    inset 0 0 0 1px oklch(1 0 0 / 16%),
+    0 1px 2px oklch(0 0 0 / 45%),
+    0 10px 24px -8px oklch(0 0 0 / 65%);
+}
+
+/* Motion-driven animations are handled per-page with <MotionConfig reducedMotion="user">;
+   this covers CSS transitions and keyframes. Applies site-wide, and only for people
+   who have asked their OS for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Blog media — the gradient artwork is a still, so two copies of it drift over
+   each other on different periods and blend. The result reads as the gradient
+   itself churning rather than the frame panning. Scale stays above 1.08 so the
+   rotation never exposes an edge. */
+@keyframes aura-drift-a {
+  from {
+    transform: scale(1.08) translate3d(-1.5%, -1%, 0) rotate(0deg);
+  }
+  to {
+    transform: scale(1.14) translate3d(1.5%, 1.5%, 0) rotate(2deg);
+  }
+}
+
+@keyframes aura-drift-b {
+  from {
+    transform: scale(1.18) translate3d(2%, 1.5%, 0) rotate(-2deg);
+  }
+  to {
+    transform: scale(1.1) translate3d(-2%, -1.5%, 0) rotate(1deg);
+  }
+}
+
+.aura-base {
+  animation: aura-drift-a 19s cubic-bezier(0.32, 0.72, 0, 1) infinite alternate;
+  will-change: transform;
+}
+
+.aura-echo {
+  animation: aura-drift-b 27s cubic-bezier(0.32, 0.72, 0, 1) infinite alternate;
+  mix-blend-mode: soft-light;
+  opacity: 0.65;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura-base {
+    animation: none;
+    transform: none;
+  }
+
+  .aura-echo {
+    display: none;
+  }
 }

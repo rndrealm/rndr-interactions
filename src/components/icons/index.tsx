@@ -66,19 +66,24 @@ export function CaretRight({ color = "#6C6C6C", size = 10 }: ICaretProps = {}) {
   );
 }
 
-export function CaretLeft() {
+export function CaretLeft({
+  color = "currentColor",
+  size = 16,
+}: ICaretProps = {}) {
   return (
     <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="scale-[1.5]"
     >
       <path
-        d="M7.36379 7.99955L10.3338 10.9696L9.48539 11.818L5.66699 7.99955L9.48539 4.18115L10.3338 5.02955L7.36379 7.99955Z"
-        fill="#A4A4A4"
+        d="M14.5 18L8.5 12L14.5 6"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
