@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
 import { CaretLeft } from "@/components/icons";
 import { posts, type Block, type Figure, type Post } from "./posts";
+import { cn } from "@/lib/utils";
 
 interface IReveal {
   delayIndex?: number;
@@ -37,16 +38,18 @@ function Reveal({ delayIndex = 0, className, children }: IReveal) {
 // The artwork is a still gradient, so every frame renders it twice — a base copy
 // and a slower echo that blends over it. The two drifting against each other is
 // what makes the gradient look alive. Reduced motion drops the echo entirely.
-function GradientImage({
+export function GradientImage({
   src,
   width,
   height,
   priority,
+  className = "",
 }: {
   src: string;
   width: number;
   height: number;
   priority?: boolean;
+  className?: string;
 }) {
   return (
     <>
@@ -56,7 +59,7 @@ function GradientImage({
         width={width}
         height={height}
         priority={priority}
-        className="aura-base h-full w-full object-cover"
+        className={cn("aura-base h-full w-full object-cover", className)}
       />
       <Image
         src={src}
@@ -64,7 +67,10 @@ function GradientImage({
         width={width}
         height={height}
         aria-hidden
-        className="aura-echo absolute inset-0 h-full w-full object-cover"
+        className={cn(
+          "aura-echo absolute inset-0 h-full w-full object-cover",
+          className,
+        )}
       />
     </>
   );
@@ -100,8 +106,8 @@ function GridItem({ post, onClick, delay = 0 }: ICard) {
 
         {/* Height-matched to the thumbnail: 2px inset top and bottom, so the text
             optically aligns with the image edges rather than overhanging them. */}
-        <span className="my-[2px] flex h-[172px] min-w-0 flex-col justify-between">
-          <span className="text-[13px] leading-[16px] font-medium tracking-normal text-[color(display-p3_0.517647_0.509804_0.505882)]">
+        <span className="my-[2px] flex h-[172px] min-w-0 flex-col gap-4 justify-between">
+          <span className="text-[11px] leading-[16px] font-medium tracking-normal text-[color(display-p3_0.517647_0.509804_0.505882)]">
             {post.date} · {post.category}
           </span>
 
@@ -168,59 +174,39 @@ function WideFigure({ figure }: { figure: Figure }) {
         <div className={`${MEDIA_FRAME} h-[342px]`}>
           <GradientImage src={figure.src} width={560} height={342} />
         </div>
-        <figcaption className="mt-3 text-[12px] leading-[20px] font-medium tracking-[-0.0046em] text-black/60">
-          {figure.caption}
-        </figcaption>
+        {figure.caption && (
+          <figcaption className="mt-3 text-[12px] leading-[20px] font-medium tracking-[-0.0046em] text-black/60">
+            {figure.caption}
+          </figcaption>
+        )}
       </figure>
-    </Breakout>
-  );
-}
-
-const SPEEDS = ["0.25×", "0.5×", "0.75×", "1×", "1.25×", "1.5×", "1.75×", "2×"];
-
-// Static stand-in for the post's inline video players — poster, scrubber and the
-// playback-rate row, so the block occupies the space a real player would.
-function VideoPlayer({ poster, duration }: { poster: string; duration: string }) {
-  return (
-    <Breakout>
-      <div className={`${MEDIA_FRAME} relative h-[378px]`}>
-        <GradientImage src={poster} width={560} height={378} />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 pb-3 pt-10">
-          <div className="h-[3px] w-full rounded-full bg-white/25">
-            <div className="h-full w-0 rounded-full bg-white" />
-          </div>
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] leading-[16px] tracking-normal text-white/70 tabular-nums">
-            <span className="text-white">00:00</span>
-            <span>{duration}</span>
-            <span className="ml-auto flex items-center gap-2">
-              {SPEEDS.map((speed) => (
-                <span key={speed} className={speed === "1×" ? "text-white" : undefined}>
-                  {speed}
-                </span>
-              ))}
-            </span>
-          </div>
-        </div>
-      </div>
     </Breakout>
   );
 }
 
 function Scroller({ figures }: { figures: Figure[] }) {
   return (
-    <div
-      className="relative left-1/2 w-screen -translate-x-1/2 overflow-x-auto scrollbar-none"
-      style={{ padding: "0 max(24px, calc(50% - 280px))" }}
-    >
-      <div className="flex gap-4">
-        {figures.map((figure) => (
-          <figure key={figure.src + figure.caption} className="w-[420px] shrink-0">
+    <div className="relative left-1/2 w-screen -translate-x-1/2 overflow-x-auto scrollbar-none">
+      {/* The inline padding lives on the track, not the scroll container, so it
+          resolves against the full viewport width. w-max is what makes the
+          trailing side count: without it the track is pinned to the container's
+          width and its right padding sits behind the overflowing cards instead
+          of after them. Half the text measure (560 less its px-6) lines the
+          first card up with the column above it. */}
+      <div
+        className="flex w-max gap-4"
+        style={{ paddingInline: "max(24px, calc(50% - 256px))" }}
+      >
+        {figures.map((figure, index) => (
+          <figure key={`${figure.src}-${index}`} className="w-[420px] shrink-0">
             <div className={`${MEDIA_FRAME} h-[252px]`}>
               <GradientImage src={figure.src} width={420} height={252} />
             </div>
-            <figcaption className="mt-3 text-[12px] leading-[20px] font-medium tracking-[-0.0046em] text-black/60">
-              {figure.caption}
-            </figcaption>
+            {figure.caption && (
+              <figcaption className="mt-3 text-[12px] leading-[20px] font-medium tracking-[-0.0046em] text-black/60">
+                {figure.caption}
+              </figcaption>
+            )}
           </figure>
         ))}
       </div>
@@ -239,15 +225,12 @@ function BlockView({ block }: { block: Block }) {
   if (block.type === "figure") {
     return <WideFigure figure={block.figure} />;
   }
-  if (block.type === "scroller") {
-    return <Scroller figures={block.figures} />;
-  }
-  return <VideoPlayer poster={block.poster} duration={block.duration} />;
+  return <Scroller figures={block.figures} />;
 }
 
 // Overlapping monogram stack for the byline. Each avatar carries a ring in the page
 // background so the circles cut into one another instead of merging.
-function AvatarStack({ authors }: { authors: Post["authors"] }) {
+export function AvatarStack({ authors }: { authors: Post["authors"] }) {
   return (
     <span className="flex -space-x-2">
       {authors.map((author) => (
@@ -268,11 +251,7 @@ function AvatarStack({ authors }: { authors: Post["authors"] }) {
   );
 }
 
-function AuthorCard({
-  author,
-}: {
-  author: Post["authors"][number];
-}) {
+function AuthorCard({ author }: { author: Post["authors"][number] }) {
   return (
     <div className="flex items-center gap-3">
       <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-grey-component shadow-[inset_0_0_0_1px_var(--stroke-hairline)]">
@@ -294,11 +273,26 @@ function AuthorCard({
   );
 }
 
-function Article({ post, onBack }: { post: Post; onBack: () => void }) {
+function Article({
+  post,
+  onBack,
+  ref,
+}: {
+  post: Post;
+  onBack: () => void;
+  ref?: React.Ref<HTMLDivElement>;
+}) {
   const column = "mx-auto w-full max-w-[560px] px-6";
 
   return (
-    <div className="font-inter w-full pb-24 pt-8 text-[14px] leading-[20px] font-normal tracking-[-0.09px] text-[#474645]">
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: { duration: 0.2 } }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="font-inter w-full pb-24 pt-8 text-[14px] leading-[20px] font-normal tracking-[-0.09px] text-[#474645]"
+    >
       <div className={column}>
         {/* Breadcrumb */}
         <Reveal delayIndex={0} className="flex items-center justify-between">
@@ -359,7 +353,6 @@ function Article({ post, onBack }: { post: Post; onBack: () => void }) {
       </div>
 
       <div className={column}>
-        {/* Intro */}
         <Reveal
           delayIndex={3}
           className="mt-9 space-y-4 text-[14px] leading-[20px] font-medium tracking-[-0.0046em] text-pretty"
@@ -368,7 +361,6 @@ function Article({ post, onBack }: { post: Post; onBack: () => void }) {
             <p key={paragraph}>{paragraph}</p>
           ))}
         </Reveal>
-
       </div>
 
       {/* Sections */}
@@ -430,7 +422,7 @@ function Article({ post, onBack }: { post: Post; onBack: () => void }) {
           </button>
         </Reveal>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -449,7 +441,7 @@ export default function Page() {
             key="grid_view"
             className="flex min-h-screen w-full items-center justify-center px-6"
           >
-            <div className="grid w-full max-w-[800px] grid-cols-2 gap-x-8 gap-y-10">
+            <div className="grid w-full max-w-200 grid-cols-2 gap-x-8 gap-y-10">
               {posts.map((post) => (
                 <GridItem
                   key={post.id}
@@ -462,7 +454,7 @@ export default function Page() {
           </div>
         )}
 
-        {selected === null && mode === "row" && (
+        {/* {selected === null && mode === "row" && (
           <div
             key="row_view"
             className="flex min-h-screen w-full items-center justify-center"
@@ -478,7 +470,8 @@ export default function Page() {
                   delay={listDelay}
                   onClick={() => {
                     if (rowContainerRef.current) {
-                      rowScrollLeftRef.current = rowContainerRef.current.scrollLeft;
+                      rowScrollLeftRef.current =
+                        rowContainerRef.current.scrollLeft;
                     }
                     setSelected(post);
                   }}
@@ -486,7 +479,7 @@ export default function Page() {
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         {selected !== null && (
           <Article
