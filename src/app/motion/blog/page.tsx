@@ -230,19 +230,38 @@ function BlockView({ block }: { block: Block }) {
 
 // Overlapping monogram stack for the byline. Each avatar carries a ring in the page
 // background so the circles cut into one another instead of merging.
-export function AvatarStack({ authors }: { authors: Post["authors"] }) {
+export function AvatarStack({
+  authors,
+  size = 28,
+  ringClassName = "ring-background",
+}: {
+  authors: Post["authors"];
+  size?: number;
+  /** Ring colour; match it to whatever surface the stack sits on. */
+  ringClassName?: string;
+}) {
   return (
-    <span className="flex -space-x-2">
-      {authors.map((author) => (
+    <span className="flex">
+      {authors.map((author, i) => (
         <span
           key={author.name}
-          className="relative h-7 w-7 overflow-hidden rounded-full bg-grey-component ring-2 ring-background"
+          className={cn(
+            "relative overflow-hidden rounded-full bg-grey-component ring-2",
+            ringClassName,
+          )}
+          // Overlap scales with the avatar (8px at the default 28px) so a
+          // smaller stack keeps the same proportion of each face visible.
+          style={{
+            width: size,
+            height: size,
+            marginLeft: i === 0 ? 0 : -Math.round((size * 2) / 7),
+          }}
         >
           <Image
             src={author.avatar}
             alt=""
-            width={28}
-            height={28}
+            width={size}
+            height={size}
             className="h-full w-full object-cover"
           />
         </span>
