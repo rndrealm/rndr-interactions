@@ -223,7 +223,7 @@ function WidgetCard({
         scale: 0.98,
         transition: { duration: 0.2, ease: "easeOut" },
       }}
-      className="group relative overflow-hidden w-72 bg-[#f6f6f6] hover:bg-[#f7f7f7] transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] [corner-shape:superellipse(2)] px-3 py-4 cursor-pointer outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#121212] shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.04),0_6px_12px_-6px_rgba(0,0,0,0.08)]"
+      className="group relative overflow-hidden w-72 bg-[#f6f6f6] hover:bg-[#efefef] transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] [corner-shape:superellipse(2)] px-3 py-4 cursor-pointer outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#121212] shadow-[0_0_0_1px_rgba(0,0,0,0.03),0_1px_2px_rgba(0,0,0,0.04),0_6px_12px_-6px_rgba(0,0,0,0.08)]"
       // A div rather than a <button>: the expanded view holds block
       // content (h4, paragraphs), which a button can't contain. So it
       // takes on the button contract by hand — focusable, announced,
@@ -365,7 +365,7 @@ function WidgetCard({
                 <AvatarStack
                   authors={post.authors}
                   size={20}
-                  ringClassName="ring-[#f6f6f6] group-hover:ring-[#f7f7f7] transition-[box-shadow] duration-150"
+                  ringClassName="ring-[#f6f6f6] group-hover:ring-[#efefef] transition-[box-shadow] duration-150"
                 />
                 <p className="font-inter text-xs font-medium leading-4 tracking-[-0.0046em] text-[#121212]/44">
                   {post.authors.map((author) => author.name).join(", ")}
