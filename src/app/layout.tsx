@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { SquircleNoScript } from "@squircle-js/react";
 import { Agentation } from "agentation";
 import "./globals.css";
@@ -17,6 +17,14 @@ const interDisplay = localFont({
     { path: "./fonts/InterDisplay-SemiBold.woff2", weight: "600", style: "normal" },
   ],
   variable: "--font-inter-display",
+  display: "swap",
+});
+
+// Inter proper, alongside the Display cuts above. Variable, so every weight the
+// blog asks for is a real instance rather than the nearest static cut.
+const inter = Inter({
+  variable: "--font-inter-sans",
+  subsets: ["latin"],
   display: "swap",
 });
 
@@ -43,7 +51,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${interDisplay.variable} ${geist.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${interDisplay.variable} ${inter.variable} ${geist.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         {/* Squircle clip-paths are computed client-side; without this the SSR'd
