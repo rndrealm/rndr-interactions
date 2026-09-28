@@ -173,7 +173,7 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       return (
         <div
           className="w-full max-w-2xl rounded-[16px] relative"
-          style={{ boxShadow: "0px 0px 0px 1px var(--surface-elevated)" }}
+          style={{ boxShadow: "0px 0px 0px 1px var(--stroke-subtle)" }}
         >
           <div
             className={cn(
@@ -209,7 +209,7 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
         ref={containerRef}
         className="w-full max-w-2xl rounded-[16px] relative"
         style={{
-          boxShadow: "0px 0px 0px 1px var(--surface-elevated)",
+          boxShadow: "0px 0px 0px 1px var(--stroke-subtle)",
         }}
         data-composer
         onMouseEnter={() => setHovering(true)}
@@ -218,7 +218,7 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
       >
         {loading ? (
           <div
-            className={`nabu-gradient absolute inset-0 rounded-2xl ${loading ? "active" : ""}`}
+            className={`nabu-gradient pointer-events-none absolute inset-0 rounded-2xl ${loading ? "active" : ""}`}
           ></div>
         ) : null}
 
@@ -228,16 +228,18 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
             animate={{ height: exhausted ? "calc(100% + 30px)" : "100%" }}
           >
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-2.5 px-2.5">
-              <p>10 Credits remaining</p>
+              <p className="tabular-nums">10 credits remaining</p>
               <div className="flex items-center gap-1.5">
                 <button className="cursor-pointer hover:underline">
                   <p>Upgrade</p>
                 </button>
                 <button
-                  className="mt-0.5 cursor-pointer"
+                  type="button"
+                  aria-label="Dismiss credits notice"
+                  className="relative mt-0.5 cursor-pointer before:absolute before:-inset-[6px] before:content-['']"
                   onClick={onExhaustedDismiss}
                 >
-                  <X className="size-3" strokeWidth={3} />
+                  <X className="size-3" strokeWidth={2} />
                 </button>
               </div>
             </div>
@@ -336,8 +338,10 @@ const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
               <AudioButton />
 
               <motion.button
-                whileTap={{ scale: 0.9 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={handleSubmit}
+                type="button"
+                aria-label="Send message"
                 className="bg-primary rounded-full cursor-pointer size-8 flex items-center justify-center"
               >
                 <ArrowUp className="size-4 text-white" />

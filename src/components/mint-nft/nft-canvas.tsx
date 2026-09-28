@@ -1,5 +1,5 @@
 "use client";
-import React, { Fragment, useRef } from "react";
+import React, { Fragment, useRef, useSyncExternalStore } from "react";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import {
   OrbitControls,
@@ -11,7 +11,7 @@ import vertexShader from "../../shaders/mint-nft/vertex.glsl";
 import fragmentShader from "../../shaders/mint-nft/fragment.glsl";
 import { Leva, useControls } from "leva";
 import { Vector2, Vector3 } from "three";
-import { SWEEPS, useMintProgress } from "./mint-progress";
+import { SWEEPS } from "./mint-progress";
 import type { MotionValue } from "motion/react";
 
 /**
@@ -166,7 +166,6 @@ function Experience({ progress }: { progress: MotionValue<number> }) {
         ref={matRef}
         uTexture={texture}
         uDirection={direction}
-        uProgress={progress}
         uRefract={refract}
         uSweeps={SWEEPS}
         uPalA={pal.a}
@@ -182,14 +181,33 @@ function Experience({ progress }: { progress: MotionValue<number> }) {
   );
 }
 
-export function NftCanvas() {
-  // Read outside <Canvas>: r3f renders into its own reconciler, so the value
-  // crosses as a prop rather than through context.
-  const { progress } = useMintProgress();
+/** The leva panel floats over the artwork, so it stays off unless the URL asks
+ *  for it: /mint-nft?debug. Read through useSyncExternalStore rather than
+ *  useSearchParams, which would drag the page into a Suspense boundary — and it
+ *  gives the server a snapshot of its own, so the flag never trips hydration.
+ *  The subscribe is a no-op: the query string cannot change without a reload. */
+const noSubscribe = () => () => {};
+const readDebugFlag = () =>
+  new URLSearchParams(window.location.search).has("debug");
+const debugOffOnServer = () => false;
+
+function useDebugPanel() {
+  return useSyncExternalStore(noSubscribe, readDebugFlag, debugOffOnServer);
+}
+
+/**
+ * The piece. Progress arrives as a prop rather than out of the mint context, so
+ * a page that only displays the artwork can pin it at SWEEPS (fully revealed)
+ * without pulling in a mint it does not have. It has to cross as a prop
+ * regardless: r3f renders into its own reconciler, which React context does not
+ * reach.
+ */
+export function NftCanvas({ progress }: { progress: MotionValue<number> }) {
+  const debug = useDebugPanel();
 
   return (
     <Fragment>
-      <Leva hidden={false} />
+      <Leva hidden={!debug} collapsed />
       <Canvas className="w-full h-full">
         {/* <Stats /> */}
         <Experience progress={progress} />

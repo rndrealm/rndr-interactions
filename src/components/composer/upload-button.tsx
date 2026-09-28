@@ -43,8 +43,10 @@ const UploadButton = ({ onUpload }: UploadButtonProps) => {
   return (
     <>
       <motion.button
-        whileTap={{ scale: 0.94 }}
+        whileTap={{ scale: 0.96 }}
         onClick={() => inputRef.current?.click()}
+        type="button"
+        aria-label="Attach files"
         className="bg-accent rounded-full cursor-pointer size-8 flex items-center justify-center"
         style={{ boxShadow: "0px 0px 0px 1px var(--accent)" }}
       >

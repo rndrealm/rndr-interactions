@@ -22,6 +22,10 @@ const SWEEP_PAUSE = 0.26;
 export const SWEEPS = 3;
 /** How long the success label holds before the button returns to idle. */
 const SUCCESS_HOLD = 2400;
+/** Price per token, in ETH. The page quotes it and the total is derived from it. */
+export const PRICE_ETH = 0.08;
+/** Selectable mint amounts, matching the per-wallet limit quoted on the page. */
+export const AMOUNTS = [1, 2, 3];
 
 /**
  * 0 → 1 → hold → 2 → hold → 3, as keyframes. A repeated value is a pause: the
@@ -61,6 +65,11 @@ type MintProgressValue = {
   progress: MotionValue<number>;
   status: MintStatus;
   mint: () => void;
+  amount: number;
+  setAmount: (amount: number) => void;
+  /** amount x PRICE_ETH, pre-formatted — the card and the provenance row both
+   *  quote it, so it is worked out once here. */
+  total: string;
 };
 
 const MintProgressContext = createContext<MintProgressValue | null>(null);
@@ -72,6 +81,7 @@ export function MintProgressProvider({
 }) {
   const progress = useMotionValue(0);
   const [status, setStatus] = useState<MintStatus>("idle");
+  const [amount, setAmount] = useState(AMOUNTS[0]);
   const running = useRef<ReturnType<typeof animate> | null>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -104,9 +114,14 @@ export function MintProgressProvider({
     });
   }, [progress, status]);
 
+  const total = useMemo(
+    () => (amount * PRICE_ETH).toFixed(2) + " ETH",
+    [amount],
+  );
+
   const value = useMemo(
-    () => ({ progress, status, mint }),
-    [progress, status, mint],
+    () => ({ progress, status, mint, amount, setAmount, total }),
+    [progress, status, mint, amount, total],
   );
 
   return (

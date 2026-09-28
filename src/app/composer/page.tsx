@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import ChatInput, { type ChatInputHandle } from "@/components/composer/chat-input";
 import { type ModelId } from "@/components/composer/model-switcher";
 import { ComposerStoreProvider } from "@/providers/composer-store-provider";
-import { motion } from "motion/react";
+import { MotionConfig, motion } from "motion/react";
 
 const presetPrompts = [
   "Check my wallet balance",
@@ -24,7 +24,7 @@ function ComposerDemo() {
   return (
     <main className="w-screen h-screen flex flex-col items-center justify-center px-4 bg-background">
       <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-        <p className="text-muted-foreground text-lg mb-6">
+        <p className="text-muted-foreground text-lg mb-6 text-balance">
           How can I help you?
         </p>
         <ChatInput
@@ -41,8 +41,8 @@ function ComposerDemo() {
             <motion.button
               key={prompt}
               whileTap={{ scale: 0.95 }}
-              className="text-xs px-3 py-1.5 rounded-full cursor-pointer bg-card text-muted-foreground hover:text-foreground transition-colors"
-              style={{ boxShadow: "0px 0px 0px 1px var(--surface-elevated)" }}
+              className="text-[13px] leading-4 font-medium px-3 py-2 rounded-full cursor-pointer bg-grey-component hover:bg-grey-component-hover text-grey-body-text hover:text-foreground transition-colors"
+              style={{ boxShadow: "0px 0px 0px 1px var(--grey-border)" }}
               onClick={() => chatInputRef.current?.insertText(prompt)}
             >
               {prompt}
@@ -57,7 +57,9 @@ function ComposerDemo() {
 export default function ComposerPage() {
   return (
     <ComposerStoreProvider>
-      <ComposerDemo />
+      <MotionConfig reducedMotion="user">
+        <ComposerDemo />
+      </MotionConfig>
     </ComposerStoreProvider>
   );
 }

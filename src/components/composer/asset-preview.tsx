@@ -60,13 +60,13 @@ const AssetPreview = ({ assets, onRemove, ghostAsset }: IProps) => {
                   scale: 0.8,
                   transition: { duration: 0.15 },
                 }}
-                className="group relative shrink-0 size-20 rounded-lg overflow-hidden border border-accent"
+                className="group relative shrink-0 size-20 rounded-lg overflow-hidden shadow-raised"
               >
                 {isImage ? (
                   <img
                     src={asset.preview}
                     alt={asset.file.name}
-                    className="size-full object-cover"
+                    className="size-full object-cover outline-1 -outline-offset-1 outline-stroke-hairline"
                   />
                 ) : (
                   <Tooltip>
@@ -86,10 +86,12 @@ const AssetPreview = ({ assets, onRemove, ghostAsset }: IProps) => {
                 )}
                 {onRemove && (
                   <button
+                    type="button"
+                    aria-label={`Remove ${asset.file.name}`}
                     onClick={() => onRemove(asset.id)}
-                    className="absolute top-0.5 right-0.5 size-4 rounded-full bg-black/50 flex items-center justify-center cursor-pointer hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-0.5 right-0.5 size-4 rounded-full bg-black/50 flex items-center justify-center cursor-pointer hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity before:absolute before:-inset-[5px] before:content-[''] [@media(hover:none)]:opacity-100"
                   >
-                    <X className="size-2.5 text-white" strokeWidth={3} />
+                    <X className="size-2.5 text-white" strokeWidth={2} />
                   </button>
                 )}
               </motion.div>
@@ -103,19 +105,16 @@ const AssetPreview = ({ assets, onRemove, ghostAsset }: IProps) => {
               animate={{ opacity: 0.5, scale: 1 }}
               exit={{ opacity: 0, transition: { duration: 0 } }}
               className={cn(
-                "relative shrink-0 rounded-md overflow-hidden border border-dashed border-purple-400/40 cursor-pointer",
+                "relative shrink-0 rounded-lg overflow-hidden border border-dashed border-stroke-subtle cursor-pointer",
                 ghostAsset.imageUrl ? "size-20" : "w-50 h-20",
+                "shadow-raised",
               )}
-              style={{
-                boxShadow:
-                  "0px 0px 0px 1px oklch(from var(--foreground) l c h / 4%), 0px 1px 2.5px 0px oklch(0 0 0 / 30%)",
-              }}
             >
               {ghostAsset.imageUrl ? (
                 <img
                   src={ghostAsset.imageUrl}
                   alt={ghostAsset.fileName}
-                  className="size-full object-cover"
+                  className="size-full object-cover outline-1 -outline-offset-1 outline-stroke-hairline"
                 />
               ) : (
                 <div

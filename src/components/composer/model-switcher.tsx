@@ -60,7 +60,7 @@ export function ModelSwitcher({ value, onChange }: ModelSwitcherProps) {
         render={
           <Button
             variant="ghost"
-            className="rounded-full hover:bg-accent aria-expanded:bg-accent aria-expanded:text-inherit cursor-pointer focus-visible:outline-none focus-visible:ring-0"
+            className="rounded-full hover:bg-accent aria-expanded:bg-accent aria-expanded:text-inherit cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           />
         }
       >
@@ -77,9 +77,7 @@ export function ModelSwitcher({ value, onChange }: ModelSwitcherProps) {
       <DropdownMenuContent
         className="w-56 bg-card! text-foreground/70! border-0! ring-0!"
         align="start"
-        style={{
-          boxShadow: "0px 0px 0px 1px var(--surface-elevated)",
-        }}
+        style={{ boxShadow: "var(--elevation-overlay)" }}
       >
         <TooltipProvider delay={0} closeDelay={100}>
           {models.map((model) => (

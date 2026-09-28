@@ -1,20 +1,18 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
+import { AMOUNTS, useMintProgress } from "./mint-progress";
 
-const DEFAULT_OPTIONS = [1, 2, 3];
-
-type AmountSelectorProps = {
-  /** Selectable mint amounts. Defaults to 1–3, matching the per-wallet limit. */
-  options?: number[];
-  defaultValue?: number;
-};
-
-export function AmountSelector({
-  options = DEFAULT_OPTIONS,
-  defaultValue = DEFAULT_OPTIONS[0],
-}: AmountSelectorProps) {
-  const [selected, setSelected] = useState(defaultValue);
+/**
+ * Sits in the slot a marketplace would give "Place bid", so the pills match that
+ * button's height — three of them fill the same 56px row the mint button occupies
+ * opposite. Selection lives in the mint context because the card quotes a total
+ * and the provenance row quotes it again after a successful mint.
+ */
+export function AmountSelector() {
+  const { amount, setAmount, status } = useMintProgress();
   const buttonsRef = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const disabled = status !== "idle";
 
   /** Arrow keys move the selection, the way a radio group is expected to behave. */
   function handleKeyDown(event: React.KeyboardEvent, index: number) {
@@ -27,15 +25,19 @@ export function AmountSelector({
     if (step === 0) return;
 
     event.preventDefault();
-    const next = (index + step + options.length) % options.length;
-    setSelected(options[next]);
+    const next = (index + step + AMOUNTS.length) % AMOUNTS.length;
+    setAmount(AMOUNTS[next]);
     buttonsRef.current[next]?.focus();
   }
 
   return (
-    <div role="radiogroup" aria-label="Select amount" className="flex gap-2">
-      {options.map((option, index) => {
-        const isSelected = option === selected;
+    <div
+      role="radiogroup"
+      aria-label="Amount to mint"
+      className="flex gap-2"
+    >
+      {AMOUNTS.map((option, index) => {
+        const isSelected = option === amount;
 
         return (
           <button
@@ -47,15 +49,16 @@ export function AmountSelector({
             role="radio"
             aria-checked={isSelected}
             tabIndex={isSelected ? 0 : -1}
-            onClick={() => setSelected(option)}
+            disabled={disabled}
+            onClick={() => setAmount(option)}
             onKeyDown={(event) => handleKeyDown(event, index)}
-            className={`rounded-[20px] text-xs leading-4 tracking-0 h-6.5 w-12 border cursor-pointer transition-colors ${
+            className={`h-14 flex-1 rounded-full text-[16px] leading-6 font-semibold tabular-nums tracking-[-0.01em] transition-[background-color,color,box-shadow,scale] duration-150 not-disabled:active:scale-[0.96] disabled:cursor-default disabled:opacity-40 ${
               isSelected
-                ? "bg-[oklch(0.2_0.003_240)] border-[oklch(0.2_0.003_240)] text-[oklch(0.982_0_0)]"
-                : "border-[oklch(0.4_0.005_240)] text-[oklch(0.4_0.005_240)] hover:border-[oklch(0.2_0.003_240)] hover:text-[oklch(0.2_0.003_240)]"
+                ? "bg-[oklch(0.15_0_0)] text-white shadow-[0_1px_2px_oklch(0.15_0_0/0.20)]"
+                : "bg-white text-[oklch(0.35_0_0)] shadow-[0_0_0_1px_oklch(0.15_0_0/0.10)] not-disabled:hover:shadow-[0_0_0_1px_oklch(0.15_0_0/0.24)] not-disabled:hover:text-[oklch(0.15_0_0)]"
             }`}
           >
-            {String(option).padStart(2, "0")}
+            {option}
           </button>
         );
       })}

@@ -1,7 +1,7 @@
 import React from "react";
 import { Header } from "@/components/nft-ui/header";
 import { Footer } from "@/components/nft-ui/footer";
-import { Content } from "@/components/mint-nft/content";
+import { Content } from "@/components/nft-listing/content";
 
 export default function Page() {
   return (

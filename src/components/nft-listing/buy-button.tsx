@@ -1,25 +1,25 @@
 "use client";
 import React from "react";
 import { TextMorph } from "torph/react";
-import { useMintProgress, type MintStatus } from "./mint-progress";
+import { useListing, type PurchaseStatus } from "./listing-state";
 
-const LABEL: Record<MintStatus, string> = {
-  idle: "Mint now",
-  loading: "Minting",
-  success: "Minted",
+const LABEL: Record<PurchaseStatus, string> = {
+  idle: "Buy Now",
+  confirming: "Confirming",
+  owned: "Owned",
 };
 
-export function MintButton() {
-  const { status, mint } = useMintProgress();
+export function BuyButton() {
+  const { status, buy } = useListing();
 
   return (
     <button
       type="button"
-      onClick={mint}
+      onClick={buy}
       disabled={status !== "idle"}
-      aria-busy={status === "loading"}
+      aria-busy={status === "confirming"}
       className={`h-14 w-full rounded-full bg-[oklch(0.15_0_0)] transition-[background-color,scale] duration-150 not-disabled:cursor-pointer not-disabled:hover:bg-[oklch(0.25_0_0)] not-disabled:active:scale-[0.96] disabled:cursor-default ${
-        status === "loading" ? "opacity-70" : ""
+        status === "confirming" ? "opacity-70" : ""
       }`}
     >
       {/* One TextMorph instance for every status — remount it and the label

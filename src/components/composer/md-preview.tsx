@@ -23,11 +23,7 @@ const MdPreview = ({ asset, onRemove }: IProps) => {
   return (
     <>
       <div
-        className="w-50 h-20 border border-accent group rounded-md overflow-hidden relative cursor-pointer"
-        style={{
-          boxShadow:
-            "0px 0px 0px 1px oklch(from var(--foreground) l c h / 4%), 0px 1px 2.5px 0px oklch(0 0 0 / 30%)",
-        }}
+        className="w-50 h-20 group rounded-lg overflow-hidden relative cursor-pointer shadow-raised"
         onClick={() => setOpen(true)}
       >
         <div
@@ -43,13 +39,15 @@ const MdPreview = ({ asset, onRemove }: IProps) => {
         </div>
         {onRemove && (
           <button
+            type="button"
+            aria-label={`Remove ${asset.file.name}`}
             onClick={(e) => {
               e.stopPropagation();
               onRemove(asset.id);
             }}
-            className="absolute top-0.5 right-0.5 size-4 rounded-full bg-black/50 flex items-center justify-center cursor-pointer hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-0.5 right-0.5 size-4 rounded-full bg-black/50 flex items-center justify-center cursor-pointer hover:bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity before:absolute before:-inset-[5px] before:content-[''] [@media(hover:none)]:opacity-100"
           >
-            <X className="size-2.5 text-white" strokeWidth={3} />
+            <X className="size-2.5 text-white" strokeWidth={2} />
           </button>
         )}
       </div>
@@ -71,6 +69,8 @@ const MdPreview = ({ asset, onRemove }: IProps) => {
               </p>
             </div>
             <button
+              type="button"
+              aria-label="Close preview"
               onClick={() => setOpen(false)}
               className="cursor-pointer mt-0.5 text-muted-foreground hover:text-foreground transition-colors"
             >

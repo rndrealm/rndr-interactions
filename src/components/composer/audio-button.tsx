@@ -8,8 +8,10 @@ const AudioButton = () => {
 
   return (
     <motion.button
-      whileTap={{ scale: 0.9 }}
+      whileTap={{ scale: 0.96 }}
       onMouseEnter={() => setHoverKey((k) => k + 1)}
+      type="button"
+      aria-label="Record voice message"
       className="bg-accent rounded-full cursor-pointer size-8 flex items-center justify-center"
       style={{ boxShadow: "0px 0px 0px 1px var(--accent)" }}
     >
