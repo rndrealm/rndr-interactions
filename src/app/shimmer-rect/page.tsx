@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { OrbitControls, shaderMaterial } from "@react-three/drei";
+import { OrbitControls, shaderMaterial, useTexture } from "@react-three/drei";
 import { Canvas, extend, useFrame, useThree } from "@react-three/fiber";
 import { Leva, useControls } from "leva";
 import vertexShader from "../../shaders/shimmer-rect/vertex.glsl";
@@ -26,10 +26,20 @@ export const CardMaterialRect = shaderMaterial(
   fragmentShader,
 );
 
+// Card face artwork. Served with `access-control-allow-origin: *`, so
+// TextureLoader's default crossOrigin="anonymous" is enough to sample it.
+const TEXTURE_URL =
+  "https://cdn.cosmos.so/63c55375-4814-48bf-aaaf-e29306cd8779?format=webp";
+// Intrinsic size of that file. The card takes its aspect from the artwork so
+// the image sits on the face uncropped and unstretched.
+const TEXTURE_W_PX = 1200;
+const TEXTURE_H_PX = 848;
+
 // The squircle, in CSS pixels. Converted to world units at render time off the
 // R3F viewport factor, so it holds these dimensions on screen at any size.
 const RECT_W_PX = 513;
-const RECT_H_PX = 324;
+// const RECT_H_PX = 324; // credit-card 1.583:1, from the painted card face
+const RECT_H_PX = RECT_W_PX * (TEXTURE_H_PX / TEXTURE_W_PX); // 1.415:1
 const RADIUS_PX = 26; // 20px +30%
 
 const SWEEP_DURATION = 1.4;
@@ -172,6 +182,7 @@ function paintChip(ctx: CanvasRenderingContext2D) {
   paintInsetEdge(ctx, x, y, w, h, r, -1, -1, "rgba(255, 255, 255, 0.9)");
 }
 
+// Unused while the artwork texture is on the face — kept for the painted card.
 // Paints the card face into a canvas and hands it over as the base texture.
 // Reproducing CSS gradients in GLSL would mean re-deriving gradient-line
 // geometry; the 2D context already implements it.
@@ -210,6 +221,16 @@ function useCardTexture() {
   useEffect(() => () => texture.dispose(), [texture]);
 
   return texture;
+}
+
+// Passed to useTexture as a module-level constant: drei runs onLoad in a layout
+// effect keyed on the callback itself, so an inline closure would refire it on
+// every render.
+function configureTexture(texture: THREE.Texture) {
+  // Same reasoning as useCardTexture above — the shader writes gl_FragColor raw,
+  // with no linear->sRGB encode, so the texture must not be decoded on sample.
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.anisotropy = 8;
 }
 
 function Experience() {
@@ -259,7 +280,7 @@ function Experience() {
     gap: {
       min: 0,
       max: 4,
-      value: 0.4,
+      value: 1.4,
       step: 0.05,
       label: "Loop gap (s)",
     },
@@ -286,7 +307,10 @@ function Experience() {
     },
   });
 
-  const texture = useCardTexture();
+  // const texture = useCardTexture();
+  // Suspends until loaded; R3F's <Canvas> already wraps children in a Suspense
+  // boundary, so no extra fallback is needed here.
+  const texture = useTexture(TEXTURE_URL, configureTexture);
 
   // px per world unit at the camera's focal plane; recomputed on resize.
   const factor = useThree((state) => state.viewport.factor);
@@ -333,7 +357,7 @@ function Experience() {
   return (
     <mesh>
       {/* Segmented so the vertex displacement has geometry to bend. */}
-      <planeGeometry args={[width, height, 160, 90]} />
+      <planeGeometry args={[width * 1.5, height * 1.5, 160, 90]} />
       {/* @ts-ignore */}
       <cardMaterialRect
         ref={matRef}
