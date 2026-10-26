@@ -62,6 +62,19 @@ const PALETTES = {
 
 type PaletteName = keyof typeof PALETTES;
 
+/**
+ * Mesh size as a fraction of the canvas. The sweep pushes vertices in-plane, so
+ * the mesh needs margin around it to swing into — at 1.0 the bend has to be
+ * choked at the rim or it drags the edge off the canvas.
+ *
+ * The leftover margin is the ceiling on uWarp. The mesh is flush left (see the
+ * mesh position below), so all the horizontal slack is on the right and the
+ * bend, which pushes that way, fits while
+ * `uWarp <= (1 - PLANE_SCALE) / PLANE_SCALE` — 0.111 here. Vertically the
+ * margin is split evenly, so the limit there is half that.
+ */
+const PLANE_SCALE = 0.9;
+
 export const NftMaterial = shaderMaterial(
   {
     uTexture: null,
@@ -69,6 +82,7 @@ export const NftMaterial = shaderMaterial(
     uProgress: 0,
     uTime: 0,
     uRefract: 0.06,
+    uWarp: 0.12,
     uSweeps: 3,
     uPalA: new Vector3(),
     uPalB: new Vector3(),
@@ -89,46 +103,62 @@ function Experience({ progress }: { progress: MotionValue<number> }) {
 
   const matRef = useRef<any>(null);
 
-  const { direction, refract, brightness, palette, scrub, scrubProgress } =
-    useControls({
-      direction: {
-        min: 0,
-        max: 1,
-        value: 1,
-        step: 0.01,
-        label: "Direction (0=vert, 0.5=45°, 1=horiz)",
-      },
-      refract: {
-        min: 0,
-        max: 2,
-        value: 0.56,
-        step: 0.005,
-        label: "Distortion",
-      },
-      brightness: {
-        min: 0,
-        max: 3,
-        value: 1,
-        step: 0.05,
-        label: "Brightness",
-      },
-      palette: {
-        value: "iridescent" as PaletteName,
-        options: Object.keys(PALETTES) as PaletteName[],
-        label: "Palette",
-      },
-      scrub: {
-        value: false,
-        label: "Scrub progress",
-      },
-      scrubProgress: {
-        min: 0,
-        max: SWEEPS,
-        value: 0,
-        step: 0.01,
-        label: "Progress",
-      },
-    });
+  const {
+    direction,
+    refract,
+    warp,
+    brightness,
+    palette,
+    scrub,
+    scrubProgress,
+  } = useControls({
+    direction: {
+      min: 0,
+      max: 1,
+      value: 1,
+      step: 0.01,
+      label: "Direction (0=vert, 0.5=45°, 1=horiz)",
+    },
+    refract: {
+      min: 0,
+      max: 2,
+      value: 0.56,
+      step: 0.005,
+      label: "Distortion",
+    },
+    warp: {
+      min: 0,
+      max: 0.25,
+      value: 0.1,
+      step: 0.005,
+      // Defaulted just under the margin PLANE_SCALE leaves on the right; past
+      // that the silhouette swings clear of the canvas and clips.
+      label: "Warp (vertex bend)",
+    },
+    brightness: {
+      min: 0,
+      max: 3,
+      value: 0.5,
+      step: 0.05,
+      label: "Brightness",
+    },
+    palette: {
+      value: "iridescent" as PaletteName,
+      options: Object.keys(PALETTES) as PaletteName[],
+      label: "Palette",
+    },
+    scrub: {
+      value: false,
+      label: "Scrub progress",
+    },
+    scrubProgress: {
+      min: 0,
+      max: SWEEPS,
+      value: 0,
+      step: 0.01,
+      label: "Progress",
+    },
+  });
 
   const pal = PALETTES[palette];
 
@@ -159,8 +189,17 @@ function Experience({ progress }: { progress: MotionValue<number> }) {
   });
 
   return (
-    <mesh>
-      <planeGeometry args={[width, height]} />
+    // Flush with the canvas's left edge, which is the same left edge the
+    // heading and the paragraph above and below it sit on — so all the
+    // horizontal slack collects on the right, where the sweep bends into it.
+    // Vertically it stays centred, leaving an even sliver top and bottom.
+    <mesh position={[(-width * (1 - PLANE_SCALE)) / 2, 0, 0]}>
+      {/* Subdivided so the sweep has vertices to push around — the crest is
+          about a tenth of the plane wide, so it needs a dense grid to bend
+          smoothly rather than fold. */}
+      <planeGeometry
+        args={[width * PLANE_SCALE, height * PLANE_SCALE, 160, 160]}
+      />
       {/* @ts-ignore */}
       <nftMaterial
         ref={matRef}
@@ -168,13 +207,14 @@ function Experience({ progress }: { progress: MotionValue<number> }) {
         uDirection={direction}
         uProgress={progress}
         uRefract={refract}
+        uWarp={warp}
         uSweeps={SWEEPS}
         uPalA={pal.a}
         uPalB={pal.b}
         uPalC={pal.c}
         uPalD={pal.d}
         uBrightness={brightness}
-        uPlaneSize={new Vector2(width, height)}
+        uPlaneSize={new Vector2(width * PLANE_SCALE, height * PLANE_SCALE)}
         uImageSize={new Vector2(image?.width, image?.height)}
       />
       {/* <meshBasicMaterial color={"red"} /> */}
@@ -189,7 +229,7 @@ export function NftCanvas() {
 
   return (
     <Fragment>
-      <Leva hidden={false} />
+      <Leva hidden={true} />
       <Canvas className="w-full h-full">
         {/* <Stats /> */}
         <Experience progress={progress} />
