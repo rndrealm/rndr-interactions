@@ -5,6 +5,7 @@ import { navTheme, type Theme } from "./theme";
 interface IProps {
   title?: string;
   description?: string;
+  onHover?: () => void;
   theme?: Theme;
 }
 
@@ -17,6 +18,7 @@ export function MenuContentItem(props: IProps) {
   const {
     description = DEFAULT_DESCRIPTION,
     title = DEFAULT_TITLE,
+    onHover,
     theme = "dark",
   } = props;
 
@@ -25,6 +27,7 @@ export function MenuContentItem(props: IProps) {
   return (
     <div
       // type="button"
+      onPointerEnter={onHover}
       className={`group p-2 flex items-center rounded-[8px] text-left cursor-pointer ${t.itemHover}`}
     >
       <div className="flex items-center gap-2 flex-1">

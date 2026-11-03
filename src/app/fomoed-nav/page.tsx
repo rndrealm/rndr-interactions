@@ -1,18 +1,19 @@
-import React from "react";
-import { FomoedIcon } from "@/components/icons";
+"use client";
+import React, { useState } from "react";
 import { NavArea } from "@/components/fomoed-nav/nav-area";
-import { navTheme } from "@/components/fomoed-nav/theme";
+import { navTheme, type Theme } from "@/components/fomoed-nav/theme";
 import { AuthButtons } from "@/components/fomoed-nav/auth-buttons";
 
 export type NavState = "offer" | "prediction" | null;
 
-const THEME = "dark";
-
 export default function Page() {
-  const t = navTheme[THEME];
+  // Temporary: the Login button flips the theme while we iterate.
+  const [theme, setTheme] = useState<Theme>("dark");
+
+  const t = navTheme[theme];
 
   return (
-    <div className="h-screen w-full bg-[#0B0B0B] flex flex-col">
+    <div className={`h-screen w-full ${t.pageBg} flex flex-col`}>
       <nav className="h-16 w-full max-w-[1280px] mx-auto px-6 md:px-8 lg:px-12 xl:px-16 grid grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center">
         <div className="w-max justify-self-start">
           {/* <FomoedIcon /> */}
@@ -20,10 +21,13 @@ export default function Page() {
         </div>
 
         <div className="self-stretch flex items-center justify-center relative">
-          <NavArea />
+          <NavArea theme={theme} />
         </div>
 
-        <AuthButtons theme={THEME} />
+        <AuthButtons
+          theme={theme}
+          onLogin={() => setTheme(theme === "dark" ? "light" : "dark")}
+        />
       </nav>
     </div>
   );

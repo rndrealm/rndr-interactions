@@ -24,16 +24,21 @@ function Shortcut({ char, className }: IShortcut) {
 
 interface IProps {
   theme?: Theme;
+  onLogin?: () => void;
 }
 
 export function AuthButtons(props: IProps) {
-  const { theme = "dark" } = props;
+  const { theme = "dark", onLogin } = props;
 
   const t = navTheme[theme];
 
   return (
     <div className="flex items-center gap-2 justify-self-end">
-      <button type="button" className={`${t.loginButton} ${BUTTON}`}>
+      <button
+        type="button"
+        onClick={onLogin}
+        className={`${t.loginButton} ${BUTTON}`}
+      >
         Login
         <Shortcut char="L" className={t.kbd} />
       </button>

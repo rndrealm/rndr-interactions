@@ -1,13 +1,6 @@
 import React from "react";
 import Link from "next/link";
-
-const links = [
-  { id: 1, label: "About", href: "/yonda/about" },
-  { id: 2, label: "Use Cases" },
-  { id: 3, label: "Products" },
-  { id: 4, label: "Company" },
-  { id: 5, label: "Contacts" },
-];
+import { NavLinks } from "./nav-menu/nav-links";
 
 export function Nav() {
   return (
@@ -18,19 +11,7 @@ export function Nav() {
         </div>
       </Link>
 
-      <div className="flex items-center">
-        {links.map((item) => {
-          return (
-            <Link key={item.id} href={item?.href || "#"}>
-              <div className="h-10 flex items-center px-3">
-                <p className="text-[#646464] text-[13px] leading-none tracking-0">
-                  {item.label}
-                </p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      <NavLinks />
 
       <div className="flex gap-4">
         <button

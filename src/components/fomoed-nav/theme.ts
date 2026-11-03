@@ -25,6 +25,9 @@ export const navTheme = {
     itemTitle: "text-[#E6E6E6] group-hover:text-[#FFFFFF]",
     itemDescription: "text-[#6C6C6C]",
     promo: "bg-[#1D1D1D]",
+    // --illo-plate is promo's colour: solids filled with it hide what's behind.
+    illustration:
+      "[--illo-plate:#1D1D1D] [--illo-surface:#262626] [--illo-line:#363636] [--illo-muted:#6C6C6C] [--illo-ink:#E6E6E6] [--illo-accent:oklch(0.587_0.193_252)] [--illo-on-accent:oklch(1_0_0)]",
   },
   light: {
     pageBg: "bg-[#FFFFFF]",
@@ -50,5 +53,7 @@ export const navTheme = {
       "text-[oklch(0.556_0_0)] group-hover:text-[oklch(0.205_0_0)]",
     itemDescription: "text-[oklch(0.708_0_0)]",
     promo: "bg-[#F1F1F1]",
+    illustration:
+      "[--illo-plate:#F1F1F1] [--illo-surface:#FFFFFF] [--illo-line:#DDDDDD] [--illo-muted:#A3A3A3] [--illo-ink:oklch(0.205_0_0)] [--illo-accent:oklch(0.587_0.193_252)] [--illo-on-accent:oklch(1_0_0)]",
   },
 } as const satisfies Record<Theme, Record<string, string>>;

@@ -9,6 +9,7 @@ interface IProps {
   data: IMenuData[];
   title: string;
   isVisible?: boolean;
+  onItemHover?: (item: IMenuData) => void;
   theme?: Theme;
 }
 
@@ -16,7 +17,7 @@ const EXPANDED_WIDTH = 284;
 const SPRING = { type: "spring", visualDuration: 0.32, bounce: 0 } as const;
 
 export function MenuGroup(props: IProps) {
-  const { data, title, isVisible = true, theme = "dark" } = props;
+  const { data, title, isVisible = true, onItemHover, theme = "dark" } = props;
 
   const t = navTheme[theme];
 
@@ -66,6 +67,7 @@ export function MenuGroup(props: IProps) {
                 key={index}
                 title={item.title}
                 description={item.description}
+                onHover={() => onItemHover?.(item)}
                 theme={theme}
               />
             ))}
