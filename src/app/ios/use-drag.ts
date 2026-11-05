@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Point, VelocityTracker } from "./physics";
 
 interface IProps {
-  onStart?: () => void;
+  onStart?: (start: Point) => void;
   // Offset from where the pointer went down
   onMove: (delta: Point) => void;
   // Release velocity in px/s
@@ -49,7 +49,7 @@ export const useDrag = (props: IProps) => {
       };
       tracker.current.reset();
       tracker.current.add(e.clientX, e.clientY);
-      onStart?.();
+      onStart?.({ x: state.current.startX, y: state.current.startY });
     },
     onPointerMove: (e: React.PointerEvent<Element>) => {
       if (e.pointerId !== state.current.pointerId) return;

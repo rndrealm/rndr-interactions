@@ -35,6 +35,12 @@ const RUBBER_BAND_C = 0.55;
 export const rubberBand = (x: number, d: number, c = RUBBER_BAND_C) =>
   (1 - 1 / ((c * x) / d + 1)) * d;
 
+export const rubberBandInverse = (
+  offset: number,
+  d: number,
+  c = RUBBER_BAND_C,
+) => (offset >= d ? Infinity : (offset * d) / (c * (d - offset)));
+
 export const applyRubberBand = (
   value: number,
   min: number,
@@ -57,6 +63,21 @@ export const springFromResponse = (
   damping: (4 * Math.PI * dampingRatio * mass) / response,
   mass,
 });
+
+export type Spring = ReturnType<typeof springFromResponse>;
+
+// The same spring with no overshoot: damping raised to critical (2√(k·m)).
+// Keeps the response and the velocity handoff, loses only the bounce.
+export const noBounce = (spring: Spring): Spring => ({
+  ...spring,
+  damping: Math.max(
+    spring.damping,
+    2 * Math.sqrt(spring.stiffness * spring.mass),
+  ),
+});
+
+// Reduced motion's stand-in for a big movement: a short fade in place
+export const FADE = { duration: 0.2, ease: "easeOut" } as const;
 
 export const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
