@@ -54,9 +54,10 @@ const nextConfig: NextConfig = {
     return config;
   },
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei"],
-  // Wildcard rather than a literal IP: DHCP reassigns the LAN address and a
-  // stale entry silently blocks the dev client bundle on phones.
-  allowedDevOrigins: ["192.168.100.*"],
+  // Wildcard rather than a literal IP: DHCP reassigns the LAN address (and the
+  // subnet changes between networks), and a stale entry silently blocks the dev
+  // client bundle on phones. Next matches per dot-separated segment.
+  allowedDevOrigins: ["192.168.*.*"],
 };
 
 export default nextConfig;
