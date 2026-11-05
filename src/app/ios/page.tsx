@@ -15,6 +15,20 @@ type Demo = {
 
 const demos: Demo[] = [
   {
+    href: "/ios/spring",
+    title: "Springs",
+    description:
+      "Apple's two-number spring: response is roughly how long it takes, damping ratio how much it bounces. Plots the curve live and converts to stiffness and damping. Everything else here is built on it.",
+    uses: ["springFromResponse"],
+  },
+  {
+    href: "/ios/interruptible",
+    title: "Interruptible animations",
+    description:
+      "Grab a ball mid-flight. One stops where it is and follows your finger, then leaves at your speed; the other ignores you until it finishes, like a timed animation that has to play out first.",
+    uses: ["springFromResponse", "project", "nearest", "applyRubberBand"],
+  },
+  {
     href: "/ios/drag",
     title: "Rubber band",
     description:
@@ -25,7 +39,7 @@ const demos: Demo[] = [
     href: "/ios/lock",
     title: "Direction lock",
     description:
-      "After 10pt a drag commits to whichever axis clearly wins, so it moves in a straight line. Diagonal drags stay free.",
+      "After 10px a drag commits to whichever axis clearly wins, so it moves in a straight line. Diagonal drags stay free.",
     uses: ["rubberBand", "stretch", "springFromResponse"],
   },
   {
@@ -62,6 +76,27 @@ const demos: Demo[] = [
     description:
       "Swipe up from the bar. A fast flick or long swipe goes home; slow down partway and the switcher opens before release, and hovering longer widens the target. Swipe sideways to jump between apps.",
     uses: ["VelocityTracker", "project", "rubberBand", "clamp"],
+  },
+  {
+    href: "/ios/drag-transition",
+    title: "Drag to dismiss",
+    description:
+      "A tile grows into a full card, and its cover stays the same the whole way, so it reads as one object. Drag down to put it back; a projected flick past a quarter returns it at the finger's speed.",
+    uses: ["project", "rubberBand", "clamp", "springFromResponse"],
+  },
+  {
+    href: "/ios/scrubber",
+    title: "Fine scrubbing",
+    description:
+      "A video scrubber that slows as your finger moves away from the bar: full, half, quarter and eighth speed. Movement is added, never jumped to, so changing speed never skips.",
+    uses: ["clamp", "springFromResponse"],
+  },
+  {
+    href: "/ios/swipe-close",
+    title: "Swipe back",
+    description:
+      "The back swipe from a navigation stack. The page tracks your finger from the left edge while the one underneath follows at a third of the speed; a projected flick decides whether it goes back.",
+    uses: ["VelocityTracker", "project", "springFromResponse"],
   },
 ];
 
@@ -101,9 +136,9 @@ export default function Page() {
             iOS interactions
           </p>
           <p className="font-geist text-sm leading-5 tracking-[-0.08px] text-[oklch(0.375_0_0)]">
-            Seven UIKit gestures rebuilt from their underlying maths, each one
-            isolated so the behaviour can be felt on its own. They all share a
-            single physics module.
+            Twelve UIKit interactions rebuilt from their underlying maths, each
+            one isolated so the behaviour can be felt on its own. They all share
+            a single physics module.
           </p>
         </div>
 
