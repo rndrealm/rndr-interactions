@@ -8,7 +8,7 @@ import {
   Plus,
   Search,
 } from "lucide-react";
-import { SQUIRCLE } from "./page";
+import { SQUIRCLE } from "../squircle";
 
 // A Maps-style search sheet, sized so each detent shows a natural amount:
 // closed peeks just the search field, half adds favourites and the top of
@@ -122,9 +122,23 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-// height: the scroll area's height, so it ends at the bottom of the screen
-// when the sheet is full
-export function MapsSheetContent({ height }: { height: number }) {
+// height: the scroll area's visible height when the sheet rests at Full, so
+// it ends at the bottom of the screen.
+// overscroll: how far past Full the sheet can be pulled. The area is that much
+// taller, so its bottom never lifts off the screen in the rubber band, and a
+// spacer of the same height at the end lets the last item still scroll up to
+// the screen's edge at rest. A fixed size, so nothing relays out while dragging.
+// isFull: the list only scrolls at Full. Below it, part of the list is off the
+// bottom of the screen, so scrolling there could never reach the end.
+export function MapsSheetContent({
+  height,
+  overscroll,
+  isFull,
+}: {
+  height: number;
+  overscroll: number;
+  isFull: boolean;
+}) {
   return (
     <div className="flex flex-col">
       {/* Closed: the sheet peeks exactly this far */}
@@ -141,8 +155,8 @@ export function MapsSheetContent({ height }: { height: number }) {
       </div>
 
       <div
-        className="-mx-4 flex flex-col overflow-y-auto overscroll-contain no-scrollbar px-4 pb-4"
-        style={{ height }}
+        className={`-mx-4 flex flex-col overscroll-contain no-scrollbar px-4 pb-4 ${isFull ? "overflow-y-auto" : "overflow-hidden"}`}
+        style={{ height: height + overscroll }}
       >
         <div className="mt-5 flex shrink-0 flex-col gap-2">
           <SectionTitle>Favourites</SectionTitle>
@@ -181,6 +195,11 @@ export function MapsSheetContent({ height }: { height: number }) {
             </div>
           ))}
         </div>
+
+        {/* Gives back the extra height, so the list can still scroll to its
+            end. A spacer rather than padding-bottom, which Safari leaves out
+            of a flex column's scroll height. */}
+        <div className="shrink-0" style={{ height: overscroll }} />
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import {
   Lock,
   Share,
 } from "lucide-react";
-import { SQUIRCLE } from "../mobile-sheet/page";
+import { SQUIRCLE } from "../squircle";
 
 // Quick Browser mock: a placeholder article and Safari's bottom address bar
 export function BrowserScreen() {

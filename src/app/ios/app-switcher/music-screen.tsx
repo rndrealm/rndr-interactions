@@ -6,7 +6,7 @@ import {
   SkipBack,
   SkipForward,
 } from "lucide-react";
-import { SQUIRCLE } from "../mobile-sheet/page";
+import { SQUIRCLE } from "../squircle";
 
 // Quick Music mock: the full-screen Now Playing player
 export function MusicScreen() {

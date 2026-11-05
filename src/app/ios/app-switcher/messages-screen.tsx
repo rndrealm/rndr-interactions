@@ -1,6 +1,6 @@
 import React from "react";
 import { ArrowUp, ChevronLeft, Plus } from "lucide-react";
-import { SQUIRCLE } from "../mobile-sheet/page";
+import { SQUIRCLE } from "../squircle";
 
 const MESSAGES = [
   { from: "them", text: "Are we still on for tonight?" },

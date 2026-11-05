@@ -1,7 +1,7 @@
 import React from "react";
 import { Navigation, Search } from "lucide-react";
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from "./page";
-import { SQUIRCLE } from "../mobile-sheet/page";
+import { SCREEN_HEIGHT, SCREEN_WIDTH } from "./app-switcher-demo";
+import { SQUIRCLE } from "../squircle";
 
 export function MapsScreen() {
   return (
