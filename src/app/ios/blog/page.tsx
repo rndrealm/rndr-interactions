@@ -171,11 +171,18 @@ export default function Page() {
           <SectionHeading id="springs">Springs</SectionHeading>
 
           <P>
-            Everything that moves on its own in these demos moves on a spring.
-            Not a duration and an easing curve: a spring, which only knows where
-            it is, where it’s going and how fast it’s already moving. That last
-            part is the whole reason to use one, and the next section depends on
-            it.
+            Most web animations are given a duration and an easing curve: move
+            here, take 300ms, slow down at the end. Almost everything that moves
+            in these demos uses a spring instead. A spring doesn’t have a fixed
+            duration. It only needs to know where it is, where it’s going, and
+            how fast it’s already moving.
+          </P>
+          <P>
+            That last part is what makes the difference. When you let go of
+            something mid-drag, it’s already moving at your finger’s speed. A
+            spring can start from that speed and carry on smoothly. A
+            duration-based animation always starts from rest, so it stops dead
+            for a moment before setting off. The next section is built on this.
           </P>
           <P>
             A spring is normally described by three physical properties:
