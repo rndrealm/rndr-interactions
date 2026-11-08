@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "A skill that helps your agent build interfaces that feel physical, and a deep dive into the twelve interactions it was built from.",
 };
 
-const SKILL_NAME = "fluid-interactions";
+const SKILL_NAME = "rndrealm/fluid-interactions";
 
 const SECTIONS = [
   { id: "getting-started", label: "Getting started" },
