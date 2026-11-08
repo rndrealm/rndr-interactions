@@ -122,6 +122,11 @@ function Card(props: ICard) {
   // Set at grab time: a card that's already open can only close, so a hard
   // swipe the other way rubber bands at 0 without revealing the other side
   const openSide = useRef<"left" | "right" | null>(null);
+  // Where the card was last sent: 0 closed, ±ACTIONS_WIDTH open. The open side
+  // is read from this, not from x: a card finishing its close sits a fraction
+  // of a pixel off 0 for a while after it looks shut, and reading x would
+  // count it as still open, so only that side could be swiped.
+  const restingAt = useRef(0);
 
   const left = useTransform(x, (v) =>
     openSide.current === "right" ? 0 : Math.max(0, v / 2),
@@ -137,7 +142,7 @@ function Card(props: ICard) {
       x.stop();
       originX.current = x.get();
       openSide.current =
-        originX.current > 0 ? "left" : originX.current < 0 ? "right" : null;
+        restingAt.current > 0 ? "left" : restingAt.current < 0 ? "right" : null;
       axis.current = null;
     },
     onMove: (delta) => {
@@ -178,6 +183,7 @@ function Card(props: ICard) {
         : opensRight
           ? -ACTIONS_WIDTH
           : 0;
+      restingAt.current = target;
       animate(x, target, { ...SWIPE, velocity: velocity.x });
     },
   });

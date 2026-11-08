@@ -53,7 +53,11 @@ export function SwipeCloseDemo(props: IDemo) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<IGesture>({ ...DEFAULT_GESTURE });
   const velocityTrackerRef = useRef(new VelocityTracker());
-  const prevLengthRef = useRef(stack.length);
+  const prevStackRef = useRef(stack);
+  // True from the moment a page is sent back until it's popped. The page
+  // underneath looks finished long before the spring's tail ends, so taps on
+  // it go by this rather than by whether x is still animating.
+  const goingBackRef = useRef(false);
 
   // How far the top page has slid right: 0 showing, SCREEN_WIDTH gone
   const x = useMotionValue(0);
@@ -67,8 +71,13 @@ export function SwipeCloseDemo(props: IDemo) {
   // x is only reset once React has swapped the pages, before paint, so the
   // outgoing page never flashes back to 0 for a frame
   useLayoutEffect(() => {
-    const pushed = stack.length > prevLengthRef.current;
-    prevLengthRef.current = stack.length;
+    const prev = prevStackRef.current;
+    prevStackRef.current = stack;
+    // A new page on top: the stack grew, or a tap during a back swapped the
+    // outgoing page for a new one (same length, new array)
+    const pushed =
+      stack.length > prev.length ||
+      (stack.length === prev.length && stack !== prev);
 
     if (pushed && reduceMotion) {
       // The new page appears in place
@@ -83,7 +92,7 @@ export function SwipeCloseDemo(props: IDemo) {
       x.set(0);
       pageOpacity.set(1);
     }
-  }, [stack.length, x, pageOpacity, reduceMotion]);
+  }, [stack, x, pageOpacity, reduceMotion]);
 
   // Read from x itself rather than a flag, so it can't get stuck: Motion
   // skips onComplete when one animation replaces another
@@ -94,6 +103,17 @@ export function SwipeCloseDemo(props: IDemo) {
     // A tap that lands while a page is moving would stack pages mid-slide
     if (isMoving() || gestureRef.current.phase === "dragging") return;
     setStack((s) => [...s, to]);
+  };
+
+  // Taps on the page underneath, which is only visible while the top page is
+  // going back. Rather than waiting out the spring, drop the outgoing page now
+  // and open the tapped one in its place.
+  const openFromUnder = (to: string) => {
+    if (!goingBackRef.current) return;
+    goingBackRef.current = false;
+    x.stop();
+    pageOpacity.stop();
+    setStack((s) => [...s.slice(0, -1), to]);
   };
 
   const resetGesture = () => {
@@ -125,28 +145,29 @@ export function SwipeCloseDemo(props: IDemo) {
     return true;
   };
 
+  // Never pop the root
+  const pop = () => {
+    if (!goingBackRef.current) return;
+    goingBackRef.current = false;
+    setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+  };
+
   const goBack = (velocity: number) => {
-    animate(x, SCREEN_WIDTH, {
-      ...NAV,
-      velocity,
-      onComplete: () => {
-        // The layout effect resets x once the page is gone. Never pop the root.
-        setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
-      },
-    });
+    goingBackRef.current = true;
+    // The layout effect resets x once the page is gone
+    animate(x, SCREEN_WIDTH, { ...NAV, velocity, onComplete: pop });
   };
 
   // The back button. Reduced motion fades the page out instead of sliding it.
   const tapBack = () => {
     if (!reduceMotion) return goBack(0);
-    animate(pageOpacity, 0, {
-      ...FADE,
-      // The layout effect restores the opacity once the page is gone
-      onComplete: () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)),
-    });
+    goingBackRef.current = true;
+    // The layout effect restores the opacity once the page is gone
+    animate(pageOpacity, 0, { ...FADE, onComplete: pop });
   };
 
   const stayHere = (velocity: number) => {
+    goingBackRef.current = false;
     animate(x, 0, { ...NAV, velocity });
   };
 
@@ -165,8 +186,11 @@ export function SwipeCloseDemo(props: IDemo) {
 
     const rect = containerRef.current!.getBoundingClientRect();
     const fromEdge = e.clientX - rect.left;
-    const midFlight = x.get() > 0;
-    if (!midFlight && fromEdge > EDGE) return;
+    // Caught while sliding, on the moving page itself. A press on the page
+    // underneath (left of the moving page's edge) is left alone, so its rows
+    // can be tapped while the top page is still going.
+    const midFlight = x.get() > 0 && fromEdge >= x.get();
+    if (!midFlight && (x.get() > 0 || fromEdge > EDGE)) return;
 
     gestureRef.current = {
       pointerId: e.pointerId,
@@ -180,7 +204,8 @@ export function SwipeCloseDemo(props: IDemo) {
     velocityTrackerRef.current.add(e.clientX, e.clientY);
 
     if (midFlight) {
-      // Caught while sliding: grab it right where it is
+      // Grab it right where it is. It's the user's now, not on its way back.
+      goingBackRef.current = false;
       x.stop();
       gestureRef.current.origin = x.get();
       startDragging(e, 0);
@@ -260,7 +285,7 @@ export function SwipeCloseDemo(props: IDemo) {
               <SettingsPage
                 name={under}
                 back={stack[stack.length - 3]}
-                onOpen={open}
+                onOpen={openFromUnder}
                 onBack={tapBack}
               />
               <motion.div
