@@ -114,7 +114,11 @@ export function MobileSheetDemo(props: IDemo) {
 
           <motion.div
             style={{ opacity: dim }}
-            className="absolute inset-0 w-full h-full bg-black pointer-events-none"
+            // At Full, tapping the map above the sheet brings the map back:
+            // the sheet drops to Half, like Maps, rather than closing
+            onClick={() => goTo(SHEET_MIDDLE)}
+            aria-hidden
+            className={`absolute inset-0 w-full h-full bg-black ${detent === SHEET_FULL ? "cursor-pointer" : "pointer-events-none"}`}
           ></motion.div>
           <motion.div
             style={{ y }}
