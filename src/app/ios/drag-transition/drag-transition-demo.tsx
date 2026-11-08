@@ -8,7 +8,9 @@ import {
   Point,
   project,
   rubberBand,
+  rubberBandInverse,
   springFromResponse,
+  stretch,
 } from "../physics";
 import { useDrag } from "../use-drag";
 import { useMotionPreference } from "../use-motion-preference";
@@ -367,9 +369,17 @@ export function DragTransitionDemo(props: IDemo) {
       if (!isOpeningRef.current) return;
       dragX.stop();
       dragY.stop();
+      // The origin is in finger px, before the rubber band. Grabbed mid-spring,
+      // turn what's on screen back into finger px, or the stretch would be
+      // applied twice and the card would jump toward the finger.
+      const shownX = dragX.get();
+      const shownY = dragY.get();
       dragOriginRef.current = {
-        x: dragX.get(),
-        y: dragY.get(),
+        x:
+          Math.sign(shownX) *
+          rubberBandInverse(Math.abs(shownX), containerW.get()),
+        // Down is free, so only an upward offset needs undoing
+        y: shownY > 0 ? shownY : -rubberBandInverse(-shownY, containerH.get()),
       };
     },
     onMove: (delta) => {
@@ -377,7 +387,9 @@ export function DragTransitionDemo(props: IDemo) {
       if (!isOpeningRef.current) return;
 
       const y = dragOriginRef.current.y + delta.y;
-      dragX.set(dragOriginRef.current.x + delta.x);
+      dragX.set(stretch(dragOriginRef.current.x + delta.x, containerW.get()));
+
+      // dragX.set(dragOriginRef.current.x + delta.x);
       // Down is free, up rubber bands
       dragY.set(y > 0 ? y : -rubberBand(-y, containerH.get()));
     },
