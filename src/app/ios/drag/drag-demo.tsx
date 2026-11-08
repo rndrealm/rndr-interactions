@@ -8,7 +8,8 @@ import { applyRubberBand, clamp, springFromResponse } from "../physics";
 import { animate } from "motion";
 
 const PADDING = 16;
-const SETTLE = springFromResponse(0.5, 0.8);
+// No bounce: the rubber band has already shown where the edge is
+const SETTLE = springFromResponse(0.5, 1);
 
 // Keep in sync with w-100 h-70 (container) and w-20 h-20 (box) below. The
 // centre is computed up front so the server-rendered HTML is already centred.
@@ -77,14 +78,15 @@ export function DragDemo(props: IDemo) {
 
     onEnd: (velocity) => {
       const { maxX, maxY } = getBounds();
-      animate(x, clamp(x.get(), PADDING, maxX - PADDING), {
-        ...spring(SETTLE),
-        velocity: velocity.x,
-      });
-      animate(y, clamp(y.get(), PADDING, maxY - PADDING), {
-        ...spring(SETTLE),
-        velocity: velocity.y,
-      });
+      const targetX = clamp(x.get(), PADDING, maxX - PADDING);
+      const targetY = clamp(y.get(), PADDING, maxY - PADDING);
+      // Let go inside the container, it stays where it was dropped. Only an
+      // axis that's past its edge springs back. Springing to where it already
+      // is would carry the release speed past it and wobble back.
+      if (targetX !== x.get())
+        animate(x, targetX, { ...spring(SETTLE), velocity: velocity.x });
+      if (targetY !== y.get())
+        animate(y, targetY, { ...spring(SETTLE), velocity: velocity.y });
     },
   });
 
